@@ -1,4 +1,4 @@
-# 🎯 Smart Attendance System (Face Recognition)
+# 🎯 Smart Attendance System.
 
 A **Smart Attendance System** built using **Python, OpenCV, Flask, and Machine Learning** that marks attendance automatically using **face recognition**.
 
