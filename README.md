@@ -31,5 +31,16 @@ This system prevents **duplicate attendance within 1 hour** and shows **Re-Verif
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Structure 
+
+├── app.py   # Main Flask application
+├── train_model.py   # Train face recognition model
+├── attendance.py   # Attendance logic
+├── templates/   # HTML files
+├── dataset/   # Face images (ignored in GitHub)
+├── trainer/   # Trained model (ignored)
+├── data/   # Student data
+├── attendance/   # Attendance Excel file
+├── haarcascade/   # Haar Cascade files
+└── README.md
 
