@@ -4,6 +4,8 @@ A **Smart Attendance System** built using **Python, OpenCV, Flask, and Machine L
 
 This system prevents **duplicate attendance within 1 hour** and shows **Re-Verified** status if the same person tries again within the restricted time.
 
+Demo : https://smart-attendance-system04.streamlit.app/
+
 ---
 
 ## 🚀 Features
