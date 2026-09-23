@@ -449,7 +449,7 @@ with st.sidebar:
     # Navigation
     menu = st.radio(
         "Navigation",
-        ["🏠  Dashboard", "📸  Mark Attendance", "📊  Attendance Records", "👥  Students", "ℹ️  About"],
+        ["🏠  Dashboard", "👥  Register Students", "📸  Mark Attendance", "📊  Attendance Records", "ℹ️  About"],
         label_visibility="collapsed"
     )
 
