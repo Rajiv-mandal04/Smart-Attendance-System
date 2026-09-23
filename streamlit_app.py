@@ -1,4 +1,3 @@
-
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -7,9 +6,10 @@ import cv2
 import numpy as np
 import pandas as pd
 import streamlit as st
+from PIL import Image
+
 
 # Page configuration
-
 st.set_page_config(
     page_title="Smart Attendance System",
     page_icon="🎓",
@@ -18,9 +18,7 @@ st.set_page_config(
 )
 
 
-# ============================================================
-# Theme CSS (same dark theme as before)
-# ============================================================
+# Dark professional theme
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -47,6 +45,7 @@ st.markdown("""
         color: #e8ecf3 !important;
     }
 
+    /* Radio as cards */
     section[data-testid="stSidebar"] div[role="radiogroup"] > label {
         background: transparent;
         border-radius: 12px;
@@ -73,12 +72,6 @@ st.markdown("""
         font-size: 0.95rem;
         font-weight: 500;
         letter-spacing: 0.3px;
-    }
-
-    section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
-        background: linear-gradient(135deg, rgba(0,114,255,0.18), rgba(142,45,226,0.18));
-        border-color: rgba(0,198,255,0.5);
-        box-shadow: 0 4px 14px rgba(0,114,255,0.2);
     }
 
     h1, h2, h3, h4 {
@@ -270,9 +263,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ============================================================
-# Paths / constants
-# ============================================================
+# Paths and constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 ATTEND_DIR = os.path.join(BASE_DIR, "attendance")
@@ -285,9 +276,6 @@ ATTENDANCE_PATH = os.path.join(ATTEND_DIR, "attendance.csv")
 TRAINER_PATH = os.path.join(TRAINER_DIR, "trainer.yml")
 CASCADE_PATH = os.path.join(HAAR_DIR, "haarcascade_frontalface_default.xml")
 
-for _d in (DATA_DIR, ATTEND_DIR, DATASET_DIR, TRAINER_DIR, HAAR_DIR):
-    os.makedirs(_d, exist_ok=True)
-
 STUDENT_COLUMNS = ["RollNo", "Name", "Branch"]
 ATTENDANCE_COLUMNS = ["RollNo", "Name", "Branch", "Date", "Time", "Timestamp", "Status"]
 
@@ -296,13 +284,7 @@ NUM_CAPTURE_IMAGES = 60
 ONE_HOUR = timedelta(hours=1)
 
 
-# ============================================================
 # Time helpers
-# FIX: the old code had a bogus "is_clock_suspicious()" check that
-# flagged ANY year >= 2026 as a wrong future clock. Since the real
-# date is 2026, that check was always wrong and produced a fake
-# warning. Removed entirely - we just trust the system clock.
-# ============================================================
 def now():
     return datetime.now()
 
@@ -315,9 +297,7 @@ def today_str():
     return now().strftime("%Y-%m-%d")
 
 
-# ============================================================
 # Student data
-# ============================================================
 def load_students():
     if not os.path.exists(STUDENT_PATH):
         return pd.DataFrame(columns=STUDENT_COLUMNS)
@@ -345,9 +325,7 @@ def add_student(rollno, name, branch):
     return True, "Student saved."
 
 
-# ============================================================
 # Attendance data
-# ============================================================
 def load_attendance():
     if not os.path.exists(ATTENDANCE_PATH):
         return pd.DataFrame(columns=ATTENDANCE_COLUMNS)
@@ -366,7 +344,6 @@ def save_attendance(df):
 
 
 def build_last_seen_cache():
-    """RollNo -> most recent Timestamp, used to enforce the 1-hour rule."""
     df = load_attendance()
     cache = {}
     for _, row in df.iterrows():
@@ -381,7 +358,6 @@ def build_last_seen_cache():
 
 
 def mark_attendance_row(rollno, name, branch, cache):
-    """Apply the 1-hour re-verify rule and append a fresh row if allowed."""
     rollno = str(rollno)
     ts = now()
     last = cache.get(rollno)
@@ -417,9 +393,6 @@ def get_total_unique_students():
     return len(ids)
 
 
-# ============================================================
-# Reset - wipes ALL stored data and face images for a fresh start
-# ============================================================
 def reset_all_data():
     save_students(pd.DataFrame(columns=STUDENT_COLUMNS))
     save_attendance(pd.DataFrame(columns=ATTENDANCE_COLUMNS))
@@ -430,9 +403,7 @@ def reset_all_data():
         os.remove(TRAINER_PATH)
 
 
-# ============================================================
-# Face recognition helpers (ported from attendance.py / train.py)
-# ============================================================
+# Face recognition helpers
 def get_cascade():
     path = CASCADE_PATH if os.path.exists(CASCADE_PATH) else (
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -441,13 +412,51 @@ def get_cascade():
 
 
 def open_camera():
+    """Try multiple backends - important on Windows."""
+    # On Windows, try DSHOW first
     if os.name == "nt":
-        return cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(0)
+        return cap
     return cv2.VideoCapture(0)
 
 
-def capture_faces(rollno, num_images=NUM_CAPTURE_IMAGES):
-    """Opens a local webcam window and saves face crops for training."""
+# Browser-based face capture (uses Streamlit's camera_input)
+def process_browser_frame(image, rollno, num_target=NUM_CAPTURE_IMAGES):
+    """Takes a PIL image from browser camera, detects face, saves crop."""
+    cascade = get_cascade()
+    frame = np.array(image.convert("RGB"))
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+    faces = cascade.detectMultiScale(gray, 1.2, 5)
+
+    if len(faces) == 0:
+        return None, "No face detected. Look straight at the camera."
+
+    student_dir = os.path.join(DATASET_DIR, str(rollno))
+    os.makedirs(student_dir, exist_ok=True)
+
+    x, y, w, h = faces[0]
+    face_img = gray[y:y + h, x:x + w]
+    face_img = cv2.resize(face_img, (200, 200))
+
+    existing = len([f for f in os.listdir(student_dir) if f.endswith(".jpg")])
+    idx = existing + 1
+    save_path = os.path.join(student_dir, f"{idx}.jpg")
+    cv2.imwrite(save_path, face_img)
+
+    # Draw box on preview image
+    preview = frame.copy()
+    cv2.rectangle(preview, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+    return preview, f"Captured image {idx}"
+
+
+# Desktop OpenCV capture (fallback - opens separate window)
+def capture_faces_desktop(rollno, num_images=NUM_CAPTURE_IMAGES):
     cascade = get_cascade()
     student_dir = os.path.join(DATASET_DIR, str(rollno))
     os.makedirs(student_dir, exist_ok=True)
@@ -457,28 +466,30 @@ def capture_faces(rollno, num_images=NUM_CAPTURE_IMAGES):
         return 0, "Could not open the webcam."
 
     count = 0
-    while count < num_images:
-        ok, frame = cam.read()
-        if not ok:
-            break
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(gray, 1.2, 5)
+    try:
+        while count < num_images:
+            ok, frame = cam.read()
+            if not ok:
+                break
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(gray, 1.2, 5)
 
-        for (x, y, w, h) in faces:
-            count += 1
-            face_img = gray[y:y + h, x:x + w]
-            cv2.imwrite(os.path.join(student_dir, f"{count}.jpg"), face_img)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(frame, f"Captured {count}/{num_images}", (x, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            break  # one good face per frame is enough
+            for (x, y, w, h) in faces:
+                count += 1
+                face_img = gray[y:y + h, x:x + w]
+                cv2.imwrite(os.path.join(student_dir, f"{count}.jpg"), face_img)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame, f"Captured {count}/{num_images}", (x, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                break
 
-        cv2.imshow("Registering Face - press ESC to stop early", frame)
-        if cv2.waitKey(1) & 0xFF == 27 or count >= num_images:
-            break
+            cv2.imshow("Registering Face - press ESC to stop early", frame)
+            if cv2.waitKey(1) & 0xFF == 27 or count >= num_images:
+                break
+    finally:
+        cam.release()
+        cv2.destroyAllWindows()
 
-    cam.release()
-    cv2.destroyAllWindows()
     return count, "Done."
 
 
@@ -498,6 +509,7 @@ def train_model():
                 img = cv2.imread(os.path.join(folder_path, fname), cv2.IMREAD_GRAYSCALE)
                 if img is None:
                     continue
+                img = cv2.resize(img, (200, 200))
                 faces.append(img)
                 ids.append(int(folder))
 
@@ -509,9 +521,50 @@ def train_model():
     return True, f"Model trained on {len(faces)} images from {len(set(ids))} student(s)."
 
 
-def run_recognition_session():
-    """Opens a local webcam window, recognizes faces continuously and
-    marks attendance live, respecting the 1-hour rule. ESC to stop."""
+# Browser-based recognition (single shot from camera_input)
+def recognize_from_browser_frame(image):
+    """Detect faces in a browser frame, mark attendance."""
+    if not os.path.exists(TRAINER_PATH):
+        return [], "No trained model found."
+
+    cascade = get_cascade()
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.read(TRAINER_PATH)
+
+    students = load_students()
+    cache = build_last_seen_cache()
+
+    frame = np.array(image.convert("RGB"))
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+    faces = cascade.detectMultiScale(gray, 1.2, 5)
+
+    if len(faces) == 0:
+        return [], "No face detected in the frame."
+
+    results = []
+    for (x, y, w, h) in faces:
+        face_img = gray[y:y + h, x:x + w]
+        face_img = cv2.resize(face_img, (200, 200))
+        rollno, conf = recognizer.predict(face_img)
+
+        if conf < CONF_THRESHOLD:
+            row = students[students["RollNo"].astype(str) == str(rollno)]
+            if not row.empty:
+                name = row.iloc[0]["Name"]
+                branch = row.iloc[0]["Branch"]
+                status, msg = mark_attendance_row(rollno, name, branch, cache)
+                results.append((status, msg))
+            else:
+                results.append(("unknown", "Unknown face - not in database."))
+        else:
+            results.append(("unknown", f"Unknown face (conf: {conf:.1f})"))
+
+    return results, "Done."
+
+
+# Desktop recognition (opens cv2 window)
+def run_recognition_desktop():
     if not os.path.exists(TRAINER_PATH):
         return "no_model", []
 
@@ -527,48 +580,48 @@ def run_recognition_session():
         return "no_camera", []
 
     session_log = []
+    try:
+        while True:
+            ok, frame = cam.read()
+            if not ok:
+                break
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(gray, 1.2, 5)
 
-    while True:
-        ok, frame = cam.read()
-        if not ok:
-            break
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(gray, 1.2, 5)
+            for (x, y, w, h) in faces:
+                face_img = gray[y:y + h, x:x + w]
+                face_img = cv2.resize(face_img, (200, 200))
+                rollno, conf = recognizer.predict(face_img)
 
-        for (x, y, w, h) in faces:
-            face_img = gray[y:y + h, x:x + w]
-            rollno, conf = recognizer.predict(face_img)
-
-            if conf < CONF_THRESHOLD:
-                row = students[students["RollNo"].astype(str) == str(rollno)]
-                if not row.empty:
-                    name = row.iloc[0]["Name"]
-                    branch = row.iloc[0]["Branch"]
-                    status, msg = mark_attendance_row(rollno, name, branch, cache)
-                    color = (0, 255, 0) if status == "success" else (0, 200, 255)
-                    label = f"{name} ({status})"
-                    if not session_log or session_log[-1] != msg:
-                        session_log.append(msg)
+                if conf < CONF_THRESHOLD:
+                    row = students[students["RollNo"].astype(str) == str(rollno)]
+                    if not row.empty:
+                        name = row.iloc[0]["Name"]
+                        branch = row.iloc[0]["Branch"]
+                        status, msg = mark_attendance_row(rollno, name, branch, cache)
+                        color = (0, 255, 0) if status == "success" else (0, 200, 255)
+                        label = f"{name} ({status})"
+                        if not session_log or session_log[-1] != msg:
+                            session_log.append(msg)
+                    else:
+                        label, color = "Unknown", (0, 0, 255)
                 else:
                     label, color = "Unknown", (0, 0, 255)
-            else:
-                label, color = "Unknown", (0, 0, 255)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-        cv2.imshow("Mark Attendance - press ESC to stop", frame)
-        if cv2.waitKey(1) & 0xFF == 27:
-            break
+            cv2.imshow("Mark Attendance - press ESC to stop", frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+    finally:
+        cam.release()
+        cv2.destroyAllWindows()
 
-    cam.release()
-    cv2.destroyAllWindows()
     return "done", session_log
 
 
-# ============================================================
 # Sidebar
-# ============================================================
 with st.sidebar:
     st.markdown("""
         <div class="brand-box">
@@ -628,16 +681,12 @@ with st.sidebar:
             st.rerun()
 
 
-# ============================================================
 # Header
-# ============================================================
 st.markdown('<div class="main-title">Smart Attendance System</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">AI-POWERED · REAL-TIME · PROFESSIONAL</div>', unsafe_allow_html=True)
 
 
-# ============================================================
 # Dashboard
-# ============================================================
 if menu_clean == "🏠 Dashboard":
     attendance_df = load_attendance()
     today = today_str()
@@ -676,14 +725,12 @@ if menu_clean == "🏠 Dashboard":
                      use_container_width=True, hide_index=True)
 
 
-# ============================================================
 # Register Student
-# ============================================================
 elif menu_clean == "📝 Register Student":
     st.markdown("### 📝 Register a New Student")
     st.markdown(
-        '<span class="info-badge">📸 This opens your webcam to capture face images, '
-        'then trains the recognition model</span>',
+        '<span class="info-badge">📸 Capture face images from your browser camera, '
+        'then train the model</span>',
         unsafe_allow_html=True
     )
 
@@ -694,39 +741,97 @@ elif menu_clean == "📝 Register Student":
     with col2:
         branch = st.text_input("Branch / Department")
 
+    st.markdown("---")
+
+    # Camera mode selector
+    mode = st.radio(
+        "Camera Mode",
+        ["🌐 Browser Camera (recommended)", "🖥️ Desktop Window (OpenCV)"],
+        horizontal=True
+    )
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("📸 Capture Face & Register Student"):
-        if not (rollno and name and branch):
-            st.error("Please fill in Roll No, Name and Branch.")
-        elif not rollno.isdigit():
-            st.error("Roll No must be numeric (it's used as the face recognition ID).")
+    # ---- Browser mode ----
+    if mode.startswith("🌐"):
+        st.info("Click 'Take Photo' for each face image you want to capture. "
+                f"Aim for at least {NUM_CAPTURE_IMAGES} images from different angles.")
+
+        if not (rollno and rollno.isdigit()):
+            st.warning("Enter a numeric Roll No first.")
         else:
-            ok, msg = add_student(rollno, name, branch)
-            if not ok:
-                st.warning(msg)
-            else:
-                with st.spinner("Opening webcam - look at the camera... (ESC to stop early)"):
-                    count, cap_msg = capture_faces(rollno)
-                if count == 0:
-                    st.error(f"No face images captured. {cap_msg} Student record removed.")
-                    df = load_students()
-                    df = df[df["RollNo"].astype(str) != str(rollno)]
-                    save_students(df)
+            student_dir = os.path.join(DATASET_DIR, str(rollno))
+            os.makedirs(student_dir, exist_ok=True)
+            existing = len([f for f in os.listdir(student_dir) if f.endswith(".jpg")])
+
+            st.markdown(f"**Captured so far:** `{existing}` / `{NUM_CAPTURE_IMAGES}`")
+
+            photo = st.camera_input("Camera", key="reg_camera")
+
+            if photo is not None:
+                image = Image.open(photo)
+                preview, msg = process_browser_frame(image, rollno)
+
+                if preview is None:
+                    st.error(msg)
                 else:
-                    st.success(f"Captured {count} face images for {name}.")
-                    with st.spinner("Training recognition model..."):
-                        trained, train_msg = train_model()
-                    if trained:
-                        st.success(f"✅ {name} registered and model trained. {train_msg}")
-                        st.balloons()
+                    st.image(preview, caption=msg, use_container_width=True)
+                    new_count = existing + 1
+                    st.success(f"✅ Saved image {new_count}. Keep going!")
+
+            if existing >= 5:
+                if st.button("🧠 Train Model Now"):
+                    if not (rollno and name and branch):
+                        st.error("Please fill Roll No, Name and Branch to register.")
                     else:
-                        st.warning(train_msg)
+                        ok, msg = add_student(rollno, name, branch)
+                        if ok or "already registered" in msg:
+                            with st.spinner("Training model..."):
+                                trained, train_msg = train_model()
+                            if trained:
+                                st.success(f"✅ {name} registered. {train_msg}")
+                                st.balloons()
+                            else:
+                                st.warning(train_msg)
+                        else:
+                            st.warning(msg)
+
+    # ---- Desktop mode ----
+    else:
+        st.warning("⚠️ This opens a separate OpenCV window. If it doesn't appear, "
+                   "switch to Browser Camera mode.")
+        st.info("Make sure no other app is using your webcam.")
+
+        if st.button("📸 Open Camera & Capture Faces"):
+            if not (rollno and name and branch):
+                st.error("Please fill in Roll No, Name and Branch.")
+            elif not rollno.isdigit():
+                st.error("Roll No must be numeric.")
+            else:
+                ok, msg = add_student(rollno, name, branch)
+                if not ok:
+                    st.warning(msg)
+                else:
+                    with st.spinner("Opening webcam... (ESC to stop early)"):
+                        count, cap_msg = capture_faces_desktop(rollno)
+
+                    if count == 0:
+                        st.error(f"No face images captured. {cap_msg} Student record removed.")
+                        df = load_students()
+                        df = df[df["RollNo"].astype(str) != str(rollno)]
+                        save_students(df)
+                    else:
+                        st.success(f"Captured {count} face images for {name}.")
+                        with st.spinner("Training recognition model..."):
+                            trained, train_msg = train_model()
+                        if trained:
+                            st.success(f"✅ {name} registered and model trained. {train_msg}")
+                            st.balloons()
+                        else:
+                            st.warning(train_msg)
 
 
-# ============================================================
 # Mark Attendance
-# ============================================================
 elif menu_clean == "📸 Mark Attendance":
     st.markdown("### 📸 Mark Attendance")
     st.markdown(
@@ -741,27 +846,56 @@ elif menu_clean == "📸 Mark Attendance":
     elif not os.path.exists(TRAINER_PATH):
         st.warning("⚠️ No trained model found. Register at least one student first.")
     else:
-        st.write("Click below to open the camera and start recognizing faces. "
-                 "Press **ESC** in the camera window when you're done.")
-        if st.button("▶️ Start Camera & Recognize"):
-            with st.spinner("Camera running - press ESC in the window to stop..."):
-                status, log = run_recognition_session()
+        mode = st.radio(
+            "Camera Mode",
+            ["🌐 Browser Camera (recommended)", "🖥️ Desktop Window (OpenCV)"],
+            horizontal=True,
+            key="mark_mode"
+        )
 
-            if status == "no_camera":
-                st.error("Could not open the webcam.")
-            elif status == "no_model":
-                st.error("No trained model found.")
-            elif not log:
-                st.info("Session ended - no attendance was newly marked.")
-            else:
-                st.success("Session ended. Results:")
-                for line in log:
-                    st.write(f"- {line}")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Browser mode
+        if mode.startswith("🌐"):
+            st.info("Take a photo - faces in the frame will be recognized and marked.")
+            photo = st.camera_input("Camera", key="mark_camera")
+
+            if photo is not None:
+                image = Image.open(photo)
+                with st.spinner("Recognizing faces..."):
+                    results, msg = recognize_from_browser_frame(image)
+
+                if not results:
+                    st.warning(msg)
+                else:
+                    for status, line in results:
+                        if status == "success":
+                            st.success(f"✅ {line}")
+                        elif status == "reverified":
+                            st.warning(f"⏳ {line}")
+                        else:
+                            st.error(f"❌ {line}")
+
+        # Desktop mode
+        else:
+            st.warning("⚠️ Opens a separate OpenCV window. Press ESC to stop.")
+            if st.button("▶️ Start Camera & Recognize"):
+                with st.spinner("Camera running - press ESC to stop..."):
+                    status, log = run_recognition_desktop()
+
+                if status == "no_camera":
+                    st.error("Could not open the webcam.")
+                elif status == "no_model":
+                    st.error("No trained model found.")
+                elif not log:
+                    st.info("Session ended - no attendance was newly marked.")
+                else:
+                    st.success("Session ended. Results:")
+                    for line in log:
+                        st.write(f"- {line}")
 
 
-# ============================================================
 # Attendance Records
-# ============================================================
 elif menu_clean == "📊 Attendance Records":
     st.markdown("### 📊 Attendance Records")
     df = load_attendance()
@@ -797,9 +931,7 @@ elif menu_clean == "📊 Attendance Records":
                             file_name=f"attendance_{today_str()}.csv", mime="text/csv")
 
 
-# ============================================================
 # Students
-# ============================================================
 elif menu_clean == "👥 Students":
     st.markdown("### 👥 Registered Students")
     df = load_students()
@@ -810,9 +942,7 @@ elif menu_clean == "👥 Students":
         st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# ============================================================
 # About
-# ============================================================
 elif menu_clean == "ℹ️ About":
     st.markdown("### ℹ️ About This System")
     st.markdown(f"""
@@ -830,9 +960,7 @@ elif menu_clean == "ℹ️ About":
     """)
 
 
-# ============================================================
 # Footer
-# ============================================================
 st.markdown("---")
 st.markdown(
     f"""
