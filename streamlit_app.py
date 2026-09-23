@@ -29,14 +29,13 @@ CASCADE_PATH = os.path.join(
 )
 DATASET_PATH = os.path.join(BASE_DIR, "dataset")
 
-
 os.makedirs(os.path.dirname(STUDENT_PATH), exist_ok=True)
 os.makedirs(os.path.dirname(ATTENDANCE_PATH), exist_ok=True)
 os.makedirs(os.path.dirname(TRAINER_PATH), exist_ok=True)
 os.makedirs(DATASET_PATH, exist_ok=True)
 
 
-# Custom styling
+# Styling
 st.markdown(
     """
     <style>
@@ -62,14 +61,6 @@ st.markdown(
         border-radius: 14px;
         border: 1px solid #e5e7eb;
         margin-top: 15px;
-    }
-
-    .status-card {
-        padding: 18px;
-        border-radius: 12px;
-        margin-top: 15px;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
     }
 
     .success-box {
@@ -111,7 +102,9 @@ st.markdown(
 # Load student data
 def load_students():
     if not os.path.exists(STUDENT_PATH):
-        return pd.DataFrame(columns=["rollno", "name", "branch"])
+        return pd.DataFrame(
+            columns=["rollno", "name", "branch"]
+        )
 
     try:
         students = pd.read_csv(
@@ -126,7 +119,9 @@ def load_students():
                 sep="\t"
             )
         except Exception:
-            return pd.DataFrame(columns=["rollno", "name", "branch"])
+            return pd.DataFrame(
+                columns=["rollno", "name", "branch"]
+            )
 
     students.columns = [
         str(col).strip().lower()
@@ -136,41 +131,118 @@ def load_students():
     rename_map = {}
 
     for col in students.columns:
-        if col in ["roll", "roll_no", "roll number", "id"]:
+        if col in [
+            "roll",
+            "roll_no",
+            "roll no",
+            "roll number",
+            "id"
+        ]:
             rename_map[col] = "rollno"
 
-        elif col in ["student_name", "student name"]:
+        elif col in [
+            "student_name",
+            "student name"
+        ]:
             rename_map[col] = "name"
 
-        elif col in ["department"]:
+        elif col in [
+            "department"
+        ]:
             rename_map[col] = "branch"
 
-    students = students.rename(columns=rename_map)
+    students = students.rename(
+        columns=rename_map
+    )
 
-    for column in ["rollno", "name", "branch"]:
+    for column in [
+        "rollno",
+        "name",
+        "branch"
+    ]:
         if column not in students.columns:
             students[column] = ""
 
-    return students[["rollno", "name", "branch"]]
+    return students[
+        ["rollno", "name", "branch"]
+    ]
 
 
 students = load_students()
 
 
-# Load attendance records
+# Load attendance data
 def load_attendance():
+    columns = [
+        "Roll No",
+        "Name",
+        "Branch",
+        "Date",
+        "Time",
+        "Status"
+    ]
+
     if not os.path.exists(ATTENDANCE_PATH):
-        return pd.DataFrame(
-            columns=["Roll No", "Name", "Branch", "Date", "Time", "Status"]
-        )
+        return pd.DataFrame(columns=columns)
 
     try:
-        df = pd.read_excel(ATTENDANCE_PATH)
-        return df
-    except Exception:
-        return pd.DataFrame(
-            columns=["Roll No", "Name", "Branch", "Date", "Time", "Status"]
+        df = pd.read_excel(
+            ATTENDANCE_PATH
         )
+
+        if df.empty:
+            return pd.DataFrame(columns=columns)
+
+        # Convert old project column names into standard names
+        rename_map = {}
+
+        for col in df.columns:
+            clean_col = str(col).strip().lower()
+
+            if clean_col in [
+                "rollno",
+                "roll_no",
+                "roll no",
+                "roll number",
+                "id"
+            ]:
+                rename_map[col] = "Roll No"
+
+            elif clean_col in [
+                "name",
+                "student_name",
+                "student name"
+            ]:
+                rename_map[col] = "Name"
+
+            elif clean_col in [
+                "branch",
+                "department"
+            ]:
+                rename_map[col] = "Branch"
+
+            elif clean_col == "date":
+                rename_map[col] = "Date"
+
+            elif clean_col == "time":
+                rename_map[col] = "Time"
+
+            elif clean_col == "status":
+                rename_map[col] = "Status"
+
+        df = df.rename(
+            columns=rename_map
+        )
+
+        # Make sure required columns exist
+        for column in columns:
+            if column not in df.columns:
+                df[column] = ""
+
+        return df[columns]
+
+    except Exception:
+        return pd.DataFrame(columns=columns)
 
 
 attendance_df = load_attendance()
@@ -182,7 +254,9 @@ def load_face_cascade():
     if not os.path.exists(CASCADE_PATH):
         return None
 
-    cascade = cv2.CascadeClassifier(CASCADE_PATH)
+    cascade = cv2.CascadeClassifier(
+        CASCADE_PATH
+    )
 
     if cascade.empty():
         return None
@@ -202,7 +276,9 @@ def load_recognizer():
     try:
         recognizer = cv2.face.LBPHFaceRecognizer_create()
         recognizer.read(TRAINER_PATH)
+
         return recognizer
+
     except Exception:
         return None
 
@@ -210,9 +286,13 @@ def load_recognizer():
 recognizer = load_recognizer()
 
 
-# Find faces in the image
+# Detect faces
 def detect_faces(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(
+        frame,
+        cv2.COLOR_RGB2GRAY
+    )
+
     gray = cv2.equalizeHist(gray)
 
     faces = face_cascade.detectMultiScale(
@@ -233,7 +313,7 @@ def detect_faces(frame):
     return gray, faces
 
 
-# Get student details from roll number
+# Find student
 def get_student(roll_no):
     if students.empty:
         return None
@@ -249,40 +329,59 @@ def get_student(roll_no):
     return result.iloc[0]
 
 
-# Check whether attendance can be marked
+# Save attendance
 def save_attendance(roll_no, name, branch):
     global attendance_df
 
     now = datetime.now()
-    today = now.strftime("%Y-%m-%d")
-    current_time = now.strftime("%H:%M:%S")
+
+    today = now.strftime(
+        "%Y-%m-%d"
+    )
+
+    current_time = now.strftime(
+        "%H:%M:%S"
+    )
 
     attendance_df = load_attendance()
 
     if not attendance_df.empty:
+
         same_student = attendance_df[
             attendance_df["Roll No"].astype(str).str.strip()
             == str(roll_no).strip()
         ].copy()
 
         if not same_student.empty:
+
             for _, row in same_student.iterrows():
+
                 try:
                     record_date = pd.to_datetime(
-                        str(row["Date"])
-                    ).strftime("%Y-%m-%d")
+                        row["Date"]
+                    ).strftime(
+                        "%Y-%m-%d"
+                    )
 
-                    record_time = str(row["Time"])
+                    record_time = str(
+                        row["Time"]
+                    )
 
                     if "." in record_time:
                         record_time = record_time.split(".")[0]
+
+                    if len(record_time.split(":")) == 2:
+                        record_time += ":00"
 
                     record_datetime = datetime.strptime(
                         f"{record_date} {record_time}",
                         "%Y-%m-%d %H:%M:%S"
                     )
 
-                    if now - record_datetime < timedelta(hours=1):
+                    if (
+                        now - record_datetime
+                        < timedelta(hours=1)
+                    ):
                         return "Re-Verified"
 
                 except Exception:
@@ -300,11 +399,12 @@ def save_attendance(roll_no, name, branch):
     )
 
     attendance_df = pd.concat(
-        [attendance_df, new_record],
+        [
+            attendance_df,
+            new_record
+        ],
         ignore_index=True
     )
-
-    os.makedirs(os.path.dirname(ATTENDANCE_PATH), exist_ok=True)
 
     attendance_df.to_excel(
         ATTENDANCE_PATH,
@@ -314,7 +414,7 @@ def save_attendance(roll_no, name, branch):
     return "Present"
 
 
-# Train the face recognition model
+# Train face model
 def train_model():
     image_data = []
     labels = []
@@ -322,27 +422,39 @@ def train_model():
     if not os.path.exists(DATASET_PATH):
         return False, "Dataset folder not found."
 
-    for roll_folder in os.listdir(DATASET_PATH):
+    for roll_folder in os.listdir(
+        DATASET_PATH
+    ):
+
         folder_path = os.path.join(
             DATASET_PATH,
             roll_folder
         )
 
-        if not os.path.isdir(folder_path):
+        if not os.path.isdir(
+            folder_path
+        ):
             continue
 
         try:
-            label = int(roll_folder)
+            label = int(
+                roll_folder
+            )
         except ValueError:
             continue
 
-        for image_name in os.listdir(folder_path):
+        for image_name in os.listdir(
+            folder_path
+        ):
+
             image_path = os.path.join(
                 folder_path,
                 image_name
             )
 
-            image = cv2.imread(image_path)
+            image = cv2.imread(
+                image_path
+            )
 
             if image is None:
                 continue
@@ -360,16 +472,24 @@ def train_model():
             )
 
             if len(faces) == 0:
+                # Images saved during registration
+                # may already be cropped faces
+                image_data.append(gray)
+                labels.append(label)
                 continue
 
             for x, y, w, h in faces:
-                face = gray[y:y + h, x:x + w]
+
+                face = gray[
+                    y:y + h,
+                    x:x + w
+                ]
 
                 image_data.append(face)
                 labels.append(label)
 
     if not image_data:
-        return False, "No face images found for training."
+        return False, "No face images found."
 
     try:
         model = cv2.face.LBPHFaceRecognizer_create()
@@ -379,7 +499,9 @@ def train_model():
             np.array(labels)
         )
 
-        model.write(TRAINER_PATH)
+        model.write(
+            TRAINER_PATH
+        )
 
         load_recognizer.clear()
 
@@ -389,20 +511,39 @@ def train_model():
         return False, str(e)
 
 
-# Save a new student and train the model
-def register_student(roll_no, name, branch, images):
+# Register student
+def register_student(
+    roll_no,
+    name,
+    branch,
+    image_file
+):
     global students
     global recognizer
 
-    roll_no = str(roll_no).strip()
-    name = str(name).strip()
-    branch = str(branch).strip()
+    roll_no = str(
+        roll_no
+    ).strip()
 
-    if not roll_no or not name or not branch:
-        return False, "Please fill all student details."
+    name = str(
+        name
+    ).strip()
 
-    if not images:
-        return False, "Please capture at least one face image."
+    branch = str(
+        branch
+    ).strip()
+
+    if not roll_no:
+        return False, "Please enter roll number."
+
+    if not name:
+        return False, "Please enter student name."
+
+    if not branch:
+        return False, "Please enter branch."
+
+    if image_file is None:
+        return False, "Please capture the student's face."
 
     existing = students[
         students["rollno"].astype(str).str.strip()
@@ -412,45 +553,62 @@ def register_student(roll_no, name, branch, images):
     if not existing.empty:
         return False, "This roll number is already registered."
 
-    student_folder = os.path.join(
-        DATASET_PATH,
-        roll_no
-    )
+    try:
+        image = Image.open(
+            image_file
+        )
 
-    os.makedirs(student_folder, exist_ok=True)
+        frame = np.array(
+            image
+        )
 
-    saved_count = 0
+        gray, faces = detect_faces(
+            frame
+        )
 
-    for index, image_file in enumerate(images, start=1):
-        try:
-            image = Image.open(image_file)
-            frame = np.array(image)
+        if len(faces) == 0:
+            return False, "No face detected. Please look directly at the camera."
 
-            gray, faces = detect_faces(frame)
+        if len(faces) > 1:
+            return False, "Multiple faces detected. Please keep only one person in front of the camera."
 
-            if len(faces) == 0:
-                continue
+        x, y, w, h = faces[0]
 
-            for x, y, w, h in faces[:1]:
-                face = gray[y:y + h, x:x + w]
+        face = gray[
+            y:y + h,
+            x:x + w
+        ]
 
-                file_path = os.path.join(
-                    student_folder,
-                    f"User.{roll_no}.{index}.jpg"
-                )
+        student_folder = os.path.join(
+            DATASET_PATH,
+            roll_no
+        )
 
-                cv2.imwrite(
-                    file_path,
-                    face
-                )
+        os.makedirs(
+            student_folder,
+            exist_ok=True
+        )
 
-                saved_count += 1
+        existing_images = os.listdir(
+            student_folder
+        )
 
-        except Exception:
-            continue
+        image_number = (
+            len(existing_images) + 1
+        )
 
-    if saved_count == 0:
-        return False, "No face detected. Please capture a clear face."
+        image_path = os.path.join(
+            student_folder,
+            f"User.{roll_no}.{image_number}.jpg"
+        )
+
+        cv2.imwrite(
+            image_path,
+            face
+        )
+
+    except Exception as e:
+        return False, f"Could not save face image: {e}"
 
     new_student = pd.DataFrame(
         [{
@@ -461,7 +619,10 @@ def register_student(roll_no, name, branch, images):
     )
 
     students = pd.concat(
-        [students, new_student],
+        [
+            students,
+            new_student
+        ],
         ignore_index=True
     )
 
@@ -478,7 +639,7 @@ def register_student(roll_no, name, branch, images):
 
     recognizer = load_recognizer()
 
-    return True, f"Student registered successfully with {saved_count} face sample(s)."
+    return True, "Student registered successfully."
 
 
 # Header
@@ -495,6 +656,7 @@ st.markdown(
 
 # Sidebar
 with st.sidebar:
+
     st.header("System Info")
 
     st.metric(
@@ -514,7 +676,7 @@ with st.sidebar:
     )
 
 
-# Main tabs
+# Tabs
 tab1, tab2, tab3 = st.tabs(
     [
         "📷 Scan Attendance",
@@ -524,36 +686,52 @@ tab1, tab2, tab3 = st.tabs(
 )
 
 
-# Attendance scanning
+# Scan attendance
 with tab1:
-    st.subheader("Scan Attendance")
+
+    st.subheader(
+        "Scan Attendance"
+    )
 
     st.write(
-        "Capture your face using the camera to mark attendance."
+        "Capture your face to mark attendance."
     )
 
     camera_image = st.camera_input(
-        "Take a photo"
+        "Take a photo",
+        key="attendance_camera"
     )
 
     if camera_image is not None:
-        image = Image.open(camera_image)
-        frame = np.array(image)
+
+        image = Image.open(
+            camera_image
+        )
+
+        frame = np.array(
+            image
+        )
 
         if face_cascade is None:
+
             st.error(
                 "Face detection model could not be loaded."
             )
 
         elif recognizer is None:
+
             st.error(
                 "Face recognition model is not available."
             )
 
         else:
-            gray, faces = detect_faces(frame)
+
+            gray, faces = detect_faces(
+                frame
+            )
 
             if len(faces) == 0:
+
                 st.markdown(
                     """
                     <div class="warning-box">
@@ -565,21 +743,35 @@ with tab1:
                 )
 
             elif len(faces) > 1:
+
                 st.warning(
                     "Multiple faces detected. Please keep only one person in front of the camera."
                 )
 
             else:
+
                 x, y, w, h = faces[0]
 
-                face = gray[y:y + h, x:x + w]
+                face = gray[
+                    y:y + h,
+                    x:x + w
+                ]
 
                 try:
-                    label, confidence = recognizer.predict(face)
 
-                    student = get_student(label)
+                    label, confidence = recognizer.predict(
+                        face
+                    )
 
-                    if student is None or confidence >= 85:
+                    student = get_student(
+                        label
+                    )
+
+                    if (
+                        student is None
+                        or confidence >= 85
+                    ):
+
                         st.markdown(
                             """
                             <div class="danger-box">
@@ -590,10 +782,11 @@ with tab1:
                         )
 
                         st.info(
-                            "Go to the 'Register Student' tab and register this student."
+                            "Open the Register Student tab and register this student."
                         )
 
                     else:
+
                         roll_no = student["rollno"]
                         name = student["name"]
                         branch = student["branch"]
@@ -618,6 +811,7 @@ with tab1:
                         )
 
                         if status == "Present":
+
                             st.markdown(
                                 """
                                 <div class="success-box">
@@ -628,6 +822,7 @@ with tab1:
                             )
 
                         else:
+
                             st.markdown(
                                 """
                                 <div class="warning-box">
@@ -638,78 +833,56 @@ with tab1:
                             )
 
                 except Exception as e:
+
                     st.error(
                         f"Face recognition error: {e}"
                     )
 
 
-# Student registration
+# Register student
 with tab2:
-    st.subheader("Register New Student")
+
+    st.subheader(
+        "Register New Student"
+    )
 
     st.write(
-        "Enter student details and capture a few clear face samples."
+        "Enter student details and capture the student's face."
     )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
+
         roll_no = st.text_input(
             "Roll No"
         )
 
     with col2:
+
         name = st.text_input(
             "Student Name"
         )
 
     with col3:
+
         branch = st.text_input(
             "Branch"
         )
 
-    st.write("Capture face samples")
-
-    sample1 = st.camera_input(
-        "Face Sample 1",
-        key="register_sample_1"
+    st.write(
+        "Capture face"
     )
 
-    sample2 = st.camera_input(
-        "Face Sample 2",
-        key="register_sample_2"
+    register_camera = st.camera_input(
+        "Take student's photo",
+        key="register_camera"
     )
 
-    sample3 = st.camera_input(
-        "Face Sample 3",
-        key="register_sample_3"
-    )
+    if register_camera is not None:
 
-    sample4 = st.camera_input(
-        "Face Sample 4",
-        key="register_sample_4"
-    )
-
-    sample5 = st.camera_input(
-        "Face Sample 5",
-        key="register_sample_5"
-    )
-
-    captured_images = [
-        image
-        for image in [
-            sample1,
-            sample2,
-            sample3,
-            sample4,
-            sample5
-        ]
-        if image is not None
-    ]
-
-    if captured_images:
         st.success(
-            f"{len(captured_images)} face sample(s) captured."
+            "Face photo captured."
         )
 
     if st.button(
@@ -717,61 +890,105 @@ with tab2:
         type="primary",
         use_container_width=True
     ):
-        with st.spinner("Registering student and training model..."):
+
+        with st.spinner(
+            "Registering student..."
+        ):
+
             success, message = register_student(
                 roll_no,
                 name,
                 branch,
-                captured_images
+                register_camera
             )
 
         if success:
-            st.success(message)
-            st.info(
-                "Now go to Scan Attendance and scan the registered student's face."
+
+            st.success(
+                message
             )
+
+            st.info(
+                "Student is registered. Now open Scan Attendance and scan the face."
+            )
+
             st.rerun()
+
         else:
-            st.error(message)
+
+            st.error(
+                message
+            )
 
 
 # Attendance records
 with tab3:
-    st.subheader("Attendance Records")
+
+    st.subheader(
+        "Attendance Records"
+    )
 
     attendance_df = load_attendance()
 
     if attendance_df.empty:
+
         st.info(
             "No attendance records available yet."
         )
 
     else:
+
         col1, col2, col3 = st.columns(3)
 
         with col1:
+
             st.metric(
                 "Total Records",
                 len(attendance_df)
             )
 
         with col2:
+
+            # Use Roll No only after standardizing columns
+            if "Roll No" in attendance_df.columns:
+
+                unique_students = (
+                    attendance_df["Roll No"]
+                    .astype(str)
+                    .replace("", np.nan)
+                    .dropna()
+                    .nunique()
+                )
+
+            else:
+
+                unique_students = 0
+
             st.metric(
                 "Students",
-                attendance_df["Roll No"].nunique()
+                unique_students
             )
 
         with col3:
-            today = datetime.now().strftime("%Y-%m-%d")
 
-            today_count = len(
-                attendance_df[
-                    attendance_df["Date"].astype(str).str.contains(
-                        today,
-                        na=False
-                    )
-                ]
+            today = datetime.now().strftime(
+                "%Y-%m-%d"
             )
+
+            if "Date" in attendance_df.columns:
+
+                today_count = len(
+                    attendance_df[
+                        attendance_df["Date"].astype(str).str.contains(
+                            today,
+                            na=False
+                        )
+                    ]
+                )
+
+            else:
+
+                today_count = 0
 
             st.metric(
                 "Today's Attendance",
@@ -784,11 +1001,15 @@ with tab3:
             hide_index=True
         )
 
-        try:
+        if os.path.exists(
+            ATTENDANCE_PATH
+        ):
+
             with open(
                 ATTENDANCE_PATH,
                 "rb"
             ) as file:
+
                 st.download_button(
                     "Download Attendance Excel",
                     data=file,
@@ -796,9 +1017,6 @@ with tab3:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
-
-        except Exception:
-            pass
 
 
 # Footer
