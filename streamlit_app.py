@@ -51,6 +51,8 @@ ATTENDANCE_COOLDOWN_MINUTES = 60
 
 FACE_MIN_SIZE = (60, 60)
 
+STUDENT_COLUMNS = ["rollno", "name", "branch"]
+
 
 # ============================================================
 # CREATE DIRECTORIES
@@ -317,68 +319,118 @@ def normalize_column_name(column):
 
 def load_students():
     """
-    Loads students.csv.
-    Supports headered TSV, headerless TSV, and comma CSV.
+    Loads students.csv with robust parsing.
+
+    This function handles:
+    1. Tab-separated file (which is what we write)
+    2. Comma-separated file (legacy)
+    3. File with header row
+    4. File without header row (auto-detects)
+
+    The key fix: we explicitly try tab separator first because
+    that is what save_student() writes. Auto-detection was
+    silently mis-parsing names containing spaces.
     """
 
     if not STUDENT_PATH.exists():
-        return pd.DataFrame(columns=["rollno", "name", "branch"])
+        return pd.DataFrame(columns=STUDENT_COLUMNS)
 
+    df = None
+
+    # Attempt 1: Tab-separated with header (our write format)
     try:
-        df = pd.read_csv(
+        candidate = pd.read_csv(
             STUDENT_PATH,
-            sep=None,
-            engine="python",
+            sep="\t",
             dtype=str,
+            keep_default_na=False,
         )
+
+        normalized_cols = [
+            normalize_column_name(c) for c in candidate.columns
+        ]
+
+        # If we got at least rollno/name/branch style columns, accept it
+        if any(c in ("rollno", "rollnumber", "id", "studentid") for c in normalized_cols):
+            df = candidate
     except Exception:
+        pass
+
+    # Attempt 2: Comma-separated with header
+    if df is None:
+        try:
+            candidate = pd.read_csv(
+                STUDENT_PATH,
+                sep=",",
+                dtype=str,
+                keep_default_na=False,
+            )
+
+            normalized_cols = [
+                normalize_column_name(c) for c in candidate.columns
+            ]
+
+            if any(c in ("rollno", "rollnumber", "id", "studentid") for c in normalized_cols):
+                df = candidate
+        except Exception:
+            pass
+
+    # Attempt 3: No header — read raw and assign column names
+    if df is None:
         try:
             df = pd.read_csv(
                 STUDENT_PATH,
                 sep="\t",
                 header=None,
-                names=["rollno", "name", "branch"],
+                names=STUDENT_COLUMNS,
                 dtype=str,
+                keep_default_na=False,
             )
         except Exception:
-            return pd.DataFrame(columns=["rollno", "name", "branch"])
+            try:
+                df = pd.read_csv(
+                    STUDENT_PATH,
+                    sep=",",
+                    header=None,
+                    names=STUDENT_COLUMNS,
+                    dtype=str,
+                    keep_default_na=False,
+                )
+            except Exception:
+                return pd.DataFrame(columns=STUDENT_COLUMNS)
 
-    if df.empty:
-        return pd.DataFrame(columns=["rollno", "name", "branch"])
+    if df is None or df.empty:
+        return pd.DataFrame(columns=STUDENT_COLUMNS)
 
-    normalized = {
-        col: normalize_column_name(col)
-        for col in df.columns
-    }
+    # Normalize column names
+    renamed = {}
+    for col in df.columns:
+        norm = normalize_column_name(col)
 
-    df = df.rename(columns=normalized)
+        if norm in ("rollno", "rollnumber", "studentid", "id"):
+            renamed[col] = "rollno"
+        elif norm in ("name", "studentname"):
+            renamed[col] = "name"
+        elif norm in ("branch", "department", "dept"):
+            renamed[col] = "branch"
 
-    expected = {"rollno", "name", "branch"}
+    df = df.rename(columns=renamed)
 
-    if not expected.issubset(set(df.columns)):
-        try:
-            df = pd.read_csv(
-                STUDENT_PATH,
-                sep="\t",
-                header=None,
-                names=["rollno", "name", "branch"],
-                dtype=str,
-            )
-        except Exception:
-            return pd.DataFrame(columns=["rollno", "name", "branch"])
-
-    for col in ["rollno", "name", "branch"]:
+    # Ensure all required columns exist
+    for col in STUDENT_COLUMNS:
         if col not in df.columns:
             df[col] = ""
 
-    df = df[["rollno", "name", "branch"]].copy()
-    df = df.fillna("")
+    df = df[STUDENT_COLUMNS].copy()
+    df = df.fillna("").astype(str)
 
-    for col in ["rollno", "name", "branch"]:
-        df[col] = df[col].astype(str).str.strip()
+    for col in STUDENT_COLUMNS:
+        df[col] = df[col].str.strip()
 
+    # Drop accidental header row if it slipped in as data
     df = df[df["rollno"].str.lower() != "rollno"]
 
+    # Drop fully-empty rows
     df = df[
         ~(
             (df["rollno"] == "")
@@ -386,6 +438,9 @@ def load_students():
             & (df["branch"] == "")
         )
     ]
+
+    # Drop rows with no rollno (garbage)
+    df = df[df["rollno"] != ""]
 
     return df.reset_index(drop=True)
 
@@ -395,6 +450,13 @@ def load_students():
 # ============================================================
 
 def save_student(rollno, name, branch):
+    """
+    Appends a new student to students.csv.
+
+    Uses tab separator consistently to match load_students().
+    Writes atomically (read whole, append, write whole) so that
+    a crash mid-write doesn't corrupt the file.
+    """
 
     rollno = str(rollno).strip()
     name = str(name).strip()
@@ -403,22 +465,22 @@ def save_student(rollno, name, branch):
     students = load_students()
 
     new_row = pd.DataFrame(
-        [
-            {
-                "rollno": rollno,
-                "name": name,
-                "branch": branch,
-            }
-        ]
+        [{"rollno": rollno, "name": name, "branch": branch}]
     )
 
     students = pd.concat([students, new_row], ignore_index=True)
 
+    # Write to a temp file first, then replace — atomic write
+    tmp_path = STUDENT_PATH.with_suffix(".csv.tmp")
+
     students.to_csv(
-        STUDENT_PATH,
+        tmp_path,
         sep="\t",
         index=False,
+        encoding="utf-8",
     )
+
+    os.replace(tmp_path, STUDENT_PATH)
 
 
 # ============================================================
