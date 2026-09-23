@@ -96,7 +96,6 @@ st.markdown(
         color: #e5e7eb;
     }
 
-    /* Brand block */
     .side-brand {
         text-align: center;
         padding: 0.4rem 0 1.1rem 0;
@@ -122,7 +121,6 @@ st.markdown(
         font-weight: 500;
     }
 
-    /* Nav label */
     .side-section-label {
         font-size: 0.7rem;
         color: #64748b;
@@ -132,7 +130,6 @@ st.markdown(
         margin: 0.6rem 0 0.4rem 0.4rem;
     }
 
-    /* Radio -> card style nav */
     [data-testid="stSidebar"] div[role="radiogroup"] {
         gap: 0.25rem;
         display: flex;
@@ -158,7 +155,6 @@ st.markdown(
         transform: translateX(2px);
     }
 
-    /* hide the tiny default radio circle */
     [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
         display: none;
     }
@@ -170,14 +166,12 @@ st.markdown(
         margin: 0;
     }
 
-    /* active state (streamlit marks the selected label) */
     [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) {
         background: linear-gradient(135deg, rgba(96,165,250,0.20), rgba(167,139,250,0.20));
         border-color: rgba(96, 165, 250, 0.55);
         box-shadow: 0 6px 18px rgba(96,165,250,0.18);
     }
 
-    /* Sidebar info box */
     .side-info {
         background: rgba(59, 130, 246, 0.10);
         border: 1px solid rgba(59, 130, 246, 0.35);
@@ -301,16 +295,12 @@ st.markdown(
 # ============================================================
 
 def now_ist():
-    """
-    Current Indian Standard Time.
-    """
+    """Current Indian Standard Time."""
     return datetime.now(IST).replace(tzinfo=None)
 
 
 def normalize_column_name(column):
-    """
-    Normalize dataframe column names.
-    """
+    """Normalize dataframe column names."""
     return (
         str(column)
         .strip()
@@ -328,30 +318,20 @@ def normalize_column_name(column):
 def load_students():
     """
     Loads students.csv.
-
-    Supports:
-    1. Headered TSV
-    2. Headerless TSV
-    3. Comma-separated CSV
+    Supports headered TSV, headerless TSV, and comma CSV.
     """
 
     if not STUDENT_PATH.exists():
-        return pd.DataFrame(
-            columns=["rollno", "name", "branch"]
-        )
+        return pd.DataFrame(columns=["rollno", "name", "branch"])
 
     try:
-
-        # First attempt: auto detect separator
         df = pd.read_csv(
             STUDENT_PATH,
             sep=None,
             engine="python",
             dtype=str,
         )
-
     except Exception:
-
         try:
             df = pd.read_csv(
                 STUDENT_PATH,
@@ -360,18 +340,12 @@ def load_students():
                 names=["rollno", "name", "branch"],
                 dtype=str,
             )
-
         except Exception:
-            return pd.DataFrame(
-                columns=["rollno", "name", "branch"]
-            )
+            return pd.DataFrame(columns=["rollno", "name", "branch"])
 
     if df.empty:
-        return pd.DataFrame(
-            columns=["rollno", "name", "branch"]
-        )
+        return pd.DataFrame(columns=["rollno", "name", "branch"])
 
-    # Normalize columns
     normalized = {
         col: normalize_column_name(col)
         for col in df.columns
@@ -379,13 +353,10 @@ def load_students():
 
     df = df.rename(columns=normalized)
 
-    # Headerless file case
     expected = {"rollno", "name", "branch"}
 
     if not expected.issubset(set(df.columns)):
-
         try:
-
             df = pd.read_csv(
                 STUDENT_PATH,
                 sep="\t",
@@ -393,41 +364,26 @@ def load_students():
                 names=["rollno", "name", "branch"],
                 dtype=str,
             )
-
         except Exception:
+            return pd.DataFrame(columns=["rollno", "name", "branch"])
 
-            return pd.DataFrame(
-                columns=["rollno", "name", "branch"]
-            )
-
-    # Ensure columns
     for col in ["rollno", "name", "branch"]:
-
         if col not in df.columns:
             df[col] = ""
 
-    df = df[
-        ["rollno", "name", "branch"]
-    ].copy()
-
+    df = df[["rollno", "name", "branch"]].copy()
     df = df.fillna("")
 
     for col in ["rollno", "name", "branch"]:
         df[col] = df[col].astype(str).str.strip()
 
-    # Remove accidental header row
-    df = df[
-        df["rollno"].str.lower() != "rollno"
-    ]
+    df = df[df["rollno"].str.lower() != "rollno"]
 
-    # Remove completely empty rows
     df = df[
         ~(
             (df["rollno"] == "")
-            &
-            (df["name"] == "")
-            &
-            (df["branch"] == "")
+            & (df["name"] == "")
+            & (df["branch"] == "")
         )
     ]
 
@@ -456,10 +412,7 @@ def save_student(rollno, name, branch):
         ]
     )
 
-    students = pd.concat(
-        [students, new_row],
-        ignore_index=True,
-    )
+    students = pd.concat([students, new_row], ignore_index=True)
 
     students.to_csv(
         STUDENT_PATH,
@@ -475,7 +428,6 @@ def save_student(rollno, name, branch):
 def load_attendance():
 
     if not ATTENDANCE_PATH.exists():
-
         return pd.DataFrame(
             columns=[
                 "roll no",
@@ -488,13 +440,8 @@ def load_attendance():
         )
 
     try:
-
-        df = pd.read_excel(
-            ATTENDANCE_PATH
-        )
-
+        df = pd.read_excel(ATTENDANCE_PATH)
     except Exception:
-
         return pd.DataFrame(
             columns=[
                 "roll no",
@@ -507,7 +454,6 @@ def load_attendance():
         )
 
     if df.empty:
-
         return pd.DataFrame(
             columns=[
                 "roll no",
@@ -519,69 +465,39 @@ def load_attendance():
             ]
         )
 
-    # Normalize columns
     mapping = {}
 
     for col in df.columns:
 
         normalized = normalize_column_name(col)
 
-        if normalized in [
-            "rollno",
-            "rollnumber",
-            "studentid",
-            "id",
-        ]:
+        if normalized in ["rollno", "rollnumber", "studentid", "id"]:
             mapping[col] = "roll no"
 
-        elif normalized in [
-            "name",
-            "studentname",
-        ]:
+        elif normalized in ["name", "studentname"]:
             mapping[col] = "name"
 
-        elif normalized in [
-            "branch",
-            "department",
-        ]:
+        elif normalized in ["branch", "department"]:
             mapping[col] = "branch"
 
-        elif normalized in [
-            "date",
-            "attendancedate",
-        ]:
+        elif normalized in ["date", "attendancedate"]:
             mapping[col] = "date"
 
-        elif normalized in [
-            "time",
-            "attendancetime",
-        ]:
+        elif normalized in ["time", "attendancetime"]:
             mapping[col] = "time"
 
-        elif normalized in [
-            "status",
-            "attendance",
-        ]:
+        elif normalized in ["status", "attendance"]:
             mapping[col] = "status"
 
     df = df.rename(columns=mapping)
 
-    required = [
-        "roll no",
-        "name",
-        "branch",
-        "date",
-        "time",
-        "status",
-    ]
+    required = ["roll no", "name", "branch", "date", "time", "status"]
 
     for col in required:
-
         if col not in df.columns:
             df[col] = ""
 
     df = df[required].copy()
-
     df = df.fillna("")
 
     return df
@@ -591,12 +507,7 @@ def load_attendance():
 # SAVE ATTENDANCE
 # ============================================================
 
-def save_attendance_record(
-    rollno,
-    name,
-    branch,
-    timestamp,
-):
+def save_attendance_record(rollno, name, branch, timestamp):
 
     attendance = load_attendance()
 
@@ -613,15 +524,9 @@ def save_attendance_record(
         ]
     )
 
-    attendance = pd.concat(
-        [attendance, new_row],
-        ignore_index=True,
-    )
+    attendance = pd.concat([attendance, new_row], ignore_index=True)
 
-    attendance.to_excel(
-        ATTENDANCE_PATH,
-        index=False,
-    )
+    attendance.to_excel(ATTENDANCE_PATH, index=False)
 
 
 # ============================================================
@@ -650,28 +555,21 @@ def can_mark_attendance(rollno):
     time_value = str(latest["time"]).strip()
 
     try:
-
         latest_datetime = datetime.strptime(
             f"{date_value} {time_value}",
             "%Y-%m-%d %H:%M:%S",
         )
-
     except Exception:
-
         return True, None
 
     current_time = now_ist()
 
     difference = current_time - latest_datetime
 
-    if difference < timedelta(
-        minutes=ATTENDANCE_COOLDOWN_MINUTES
-    ):
+    if difference < timedelta(minutes=ATTENDANCE_COOLDOWN_MINUTES):
 
         remaining = (
-            timedelta(
-                minutes=ATTENDANCE_COOLDOWN_MINUTES
-            )
+            timedelta(minutes=ATTENDANCE_COOLDOWN_MINUTES)
             - difference
         )
 
@@ -684,29 +582,16 @@ def can_mark_attendance(rollno):
 # MARK ATTENDANCE
 # ============================================================
 
-def mark_attendance(
-    rollno,
-    name,
-    branch,
-):
+def mark_attendance(rollno, name, branch):
 
-    # IMPORTANT:
-    # Time generated exactly when attendance is marked
     current_time = now_ist()
 
-    allowed, remaining = can_mark_attendance(
-        rollno
-    )
+    allowed, remaining = can_mark_attendance(rollno)
 
     if not allowed:
 
-        minutes = int(
-            remaining.total_seconds() // 60
-        )
-
-        seconds = int(
-            remaining.total_seconds() % 60
-        )
+        minutes = int(remaining.total_seconds() // 60)
+        seconds = int(remaining.total_seconds() % 60)
 
         return (
             False,
@@ -714,12 +599,7 @@ def mark_attendance(
             f"Try again after {minutes}m {seconds}s."
         )
 
-    save_attendance_record(
-        rollno,
-        name,
-        branch,
-        current_time,
-    )
+    save_attendance_record(rollno, name, branch, current_time)
 
     return (
         True,
@@ -738,9 +618,7 @@ def load_face_cascade():
     if not CASCADE_PATH.exists():
         return None
 
-    cascade = cv2.CascadeClassifier(
-        str(CASCADE_PATH)
-    )
+    cascade = cv2.CascadeClassifier(str(CASCADE_PATH))
 
     if cascade.empty():
         return None
@@ -759,17 +637,10 @@ def load_recognizer():
         return None
 
     try:
-
         recognizer = cv2.face.LBPHFaceRecognizer_create()
-
-        recognizer.read(
-            str(TRAINER_PATH)
-        )
-
+        recognizer.read(str(TRAINER_PATH))
         return recognizer
-
     except Exception:
-
         return None
 
 
@@ -784,14 +655,9 @@ def detect_faces(image):
     if cascade is None:
         return []
 
-    gray = cv2.cvtColor(
-        image,
-        cv2.COLOR_BGR2GRAY,
-    )
-
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
 
-    # First detection
     faces = cascade.detectMultiScale(
         gray,
         scaleFactor=1.08,
@@ -802,15 +668,10 @@ def detect_faces(image):
     valid_faces = []
 
     for x, y, w, h in faces:
-
         area = w * h
-
         if area >= 4000:
-            valid_faces.append(
-                (x, y, w, h)
-            )
+            valid_faces.append((x, y, w, h))
 
-    # Fallback
     if not valid_faces:
 
         faces = cascade.detectMultiScale(
@@ -821,12 +682,8 @@ def detect_faces(image):
         )
 
         for x, y, w, h in faces:
-
             if w * h >= 3000:
-
-                valid_faces.append(
-                    (x, y, w, h)
-                )
+                valid_faces.append((x, y, w, h))
 
     return valid_faces
 
@@ -842,12 +699,7 @@ def detect_single_face(image):
     if not faces:
         return None
 
-    # Pick largest face instead of assuming
-    # multiple Haar rectangles = multiple people
-    largest_face = max(
-        faces,
-        key=lambda item: item[2] * item[3],
-    )
+    largest_face = max(faces, key=lambda item: item[2] * item[3])
 
     return largest_face
 
@@ -856,102 +708,35 @@ def detect_single_face(image):
 # AUGMENTATION
 # ============================================================
 
-def create_training_samples(
-    face_gray,
-    output_dir,
-    rollno,
-):
+def create_training_samples(face_gray, output_dir, rollno):
 
-    output_dir.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     samples = []
 
-    # Original
     samples.append(face_gray)
+    samples.append(cv2.flip(face_gray, 1))
+    samples.append(cv2.GaussianBlur(face_gray, (3, 3), 0))
 
-    # Horizontal flip
-    samples.append(
-        cv2.flip(face_gray, 1)
-    )
-
-    # Slight blur
-    samples.append(
-        cv2.GaussianBlur(
-            face_gray,
-            (3, 3),
-            0,
-        )
-    )
-
-    # Brightness
-    brighter = cv2.convertScaleAbs(
-        face_gray,
-        alpha=1.0,
-        beta=15,
-    )
-
+    brighter = cv2.convertScaleAbs(face_gray, alpha=1.0, beta=15)
     samples.append(brighter)
 
-    # Darker
-    darker = cv2.convertScaleAbs(
-        face_gray,
-        alpha=1.0,
-        beta=-15,
-    )
-
+    darker = cv2.convertScaleAbs(face_gray, alpha=1.0, beta=-15)
     samples.append(darker)
 
-    # Contrast
-    contrast = cv2.convertScaleAbs(
-        face_gray,
-        alpha=1.15,
-        beta=0,
-    )
-
+    contrast = cv2.convertScaleAbs(face_gray, alpha=1.15, beta=0)
     samples.append(contrast)
 
-    # Sharpen
-    kernel = np.array(
-        [
-            [0, -1, 0],
-            [-1, 5, -1],
-            [0, -1, 0],
-        ]
-    )
-
-    sharpened = cv2.filter2D(
-        face_gray,
-        -1,
-        kernel,
-    )
-
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    sharpened = cv2.filter2D(face_gray, -1, kernel)
     samples.append(sharpened)
 
-    # Save samples
-    start_index = len(
-        list(output_dir.glob("*.jpg"))
-    ) + 1
+    start_index = len(list(output_dir.glob("*.jpg"))) + 1
 
-    for index, sample in enumerate(
-        samples,
-        start=start_index,
-    ):
-
-        filename = (
-            f"User.{rollno}.{index}.jpg"
-        )
-
-        filepath = (
-            output_dir / filename
-        )
-
-        cv2.imwrite(
-            str(filepath),
-            sample,
-        )
+    for index, sample in enumerate(samples, start=start_index):
+        filename = f"User.{rollno}.{index}.jpg"
+        filepath = output_dir / filename
+        cv2.imwrite(str(filepath), sample)
 
     return len(samples)
 
@@ -978,95 +763,46 @@ def train_model():
     student_folders = [
         folder
         for folder in DATASET_DIR.iterdir()
-        if folder.is_dir()
-        and folder.name.isdigit()
+        if folder.is_dir() and folder.name.isdigit()
     ]
 
     if not student_folders:
-
-        return (
-            False,
-            "No student face dataset found.",
-        )
+        return False, "No student face dataset found."
 
     for student_folder in student_folders:
 
         try:
-            student_id = int(
-                student_folder.name
-            )
-
+            student_id = int(student_folder.name)
         except ValueError:
             continue
 
-        image_files = list(
-            student_folder.glob("*.jpg")
-        )
-
-        image_files += list(
-            student_folder.glob("*.jpeg")
-        )
-
-        image_files += list(
-            student_folder.glob("*.png")
-        )
+        image_files = list(student_folder.glob("*.jpg"))
+        image_files += list(student_folder.glob("*.jpeg"))
+        image_files += list(student_folder.glob("*.png"))
 
         for image_path in image_files:
 
-            image = cv2.imread(
-                str(image_path),
-                cv2.IMREAD_GRAYSCALE,
-            )
+            image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
 
             if image is None:
                 continue
 
-            # Normalize image
-            image = cv2.resize(
-                image,
-                (200, 200),
-            )
-
-            image = cv2.equalizeHist(
-                image
-            )
+            image = cv2.resize(image, (200, 200))
+            image = cv2.equalizeHist(image)
 
             faces.append(image)
             ids.append(student_id)
 
     if not faces:
-
-        return (
-            False,
-            "No valid face images found.",
-        )
+        return False, "No valid face images found."
 
     try:
-
-        recognizer.train(
-            faces,
-            np.array(ids),
-        )
-
-        recognizer.save(
-            str(TRAINER_PATH)
-        )
-
-        # Clear Streamlit cache
+        recognizer.train(faces, np.array(ids))
+        recognizer.save(str(TRAINER_PATH))
         load_recognizer.clear()
-
-        return (
-            True,
-            f"Model trained successfully "
-            f"using {len(faces)} images.",
-        )
-
+        return True, f"Model trained successfully using {len(faces)} images."
     except Exception as e:
-
-        return (
-            False,
-            f"Training failed: {e}",
-        )
+        return False, f"Training failed: {e}"
 
 
 # ============================================================
@@ -1078,124 +814,54 @@ def recognize_face(image):
     students = load_students()
 
     if students.empty:
-
         return (
-            None,
-            None,
-            None,
-            image,
+            None, None, None, image,
             "No registered students found.",
         )
 
     recognizer = load_recognizer()
 
     if recognizer is None:
-
         return (
-            None,
-            None,
-            None,
-            image,
-            "Trained model not found. "
-            "Please register a student first.",
+            None, None, None, image,
+            "Trained model not found. Please register a student first.",
         )
 
     face = detect_single_face(image)
 
     if face is None:
-
-        return (
-            None,
-            None,
-            None,
-            image,
-            "No face detected.",
-        )
+        return (None, None, None, image, "No face detected.")
 
     x, y, w, h = face
 
-    gray = cv2.cvtColor(
-        image,
-        cv2.COLOR_BGR2GRAY,
-    )
-
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
 
-    face_gray = gray[
-        y:y + h,
-        x:x + w
-    ]
+    face_gray = gray[y:y + h, x:x + w]
 
     if face_gray.size == 0:
+        return (None, None, None, image, "Invalid face region.")
 
-        return (
-            None,
-            None,
-            None,
-            image,
-            "Invalid face region.",
-        )
-
-    face_gray = cv2.resize(
-        face_gray,
-        (200, 200),
-    )
+    face_gray = cv2.resize(face_gray, (200, 200))
 
     try:
-
-        predicted_id, confidence = (
-            recognizer.predict(
-                face_gray
-            )
-        )
-
+        predicted_id, confidence = recognizer.predict(face_gray)
     except Exception as e:
-
-        return (
-            None,
-            None,
-            None,
-            image,
-            f"Recognition error: {e}",
-        )
+        return (None, None, None, image, f"Recognition error: {e}")
 
     annotated = image.copy()
 
-    # --------------------------------------------------------
-    # UNKNOWN FACE
-    # --------------------------------------------------------
-
+    # Unknown face
     if confidence > RECOGNITION_THRESHOLD:
 
-        cv2.rectangle(
-            annotated,
-            (x, y),
-            (x + w, y + h),
-            (0, 0, 255),
-            3,
-        )
-
+        cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 3)
         cv2.putText(
-            annotated,
-            "Unknown",
+            annotated, "Unknown",
             (x, max(y - 10, 25)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 0, 255),
-            2,
+            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2,
         )
 
-        return (
-            None,
-            None,
-            confidence,
-            annotated,
-            "Face not recognized.",
-        )
-
-    # --------------------------------------------------------
-    # FIND STUDENT
-    # --------------------------------------------------------
+        return (None, None, confidence, annotated, "Face not recognized.")
 
     student_rows = students[
         students["rollno"].astype(str).str.strip()
@@ -1205,92 +871,39 @@ def recognize_face(image):
 
     if student_rows.empty:
 
-        cv2.rectangle(
-            annotated,
-            (x, y),
-            (x + w, y + h),
-            (0, 0, 255),
-            3,
-        )
-
+        cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 3)
         cv2.putText(
-            annotated,
-            "Unknown",
+            annotated, "Unknown",
             (x, max(y - 10, 25)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 0, 255),
-            2,
+            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2,
         )
 
-        return (
-            None,
-            None,
-            confidence,
-            annotated,
-            "Recognized ID is not registered.",
-        )
+        return (None, None, confidence, annotated, "Recognized ID is not registered.")
 
     student = student_rows.iloc[0]
 
-    rollno = str(
-        student["rollno"]
-    ).strip()
+    rollno = str(student["rollno"]).strip()
+    name = str(student["name"]).strip()
 
-    name = str(
-        student["name"]
-    ).strip()
+    cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-    # --------------------------------------------------------
-    # DRAW FACE BOX
-    # --------------------------------------------------------
+    label = f"{name} | Roll: {rollno}"
 
     cv2.rectangle(
         annotated,
-        (x, y),
-        (x + w, y + h),
-        (0, 255, 0),
-        3,
-    )
-
-    label = (
-        f"{name} | Roll: {rollno}"
-    )
-
-    cv2.rectangle(
-        annotated,
-        (
-            x,
-            max(y - 42, 0),
-        ),
-        (
-            x + w,
-            y,
-        ),
+        (x, max(y - 42, 0)),
+        (x + w, y),
         (0, 255, 0),
         -1,
     )
 
     cv2.putText(
-        annotated,
-        label,
-        (
-            x + 5,
-            max(y - 12, 20),
-        ),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        (0, 0, 0),
-        2,
+        annotated, label,
+        (x + 5, max(y - 12, 20)),
+        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2,
     )
 
-    return (
-        rollno,
-        name,
-        confidence,
-        annotated,
-        "Face recognized.",
-    )
+    return (rollno, name, confidence, annotated, "Face recognized.")
 
 
 # ============================================================
@@ -1299,7 +912,6 @@ def recognize_face(image):
 
 with st.sidebar:
 
-    # Brand header
     st.markdown(
         """
         <div class="side-brand">
@@ -1310,7 +922,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Nav label
     st.markdown(
         '<div class="side-section-label">Navigation</div>',
         unsafe_allow_html=True,
@@ -1332,8 +943,8 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Live clock
     _now = now_ist()
+
     st.markdown(
         f"""
         <div class="side-clock">
@@ -1344,7 +955,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Timezone info
     st.markdown(
         """
         <div class="side-info">
@@ -1354,7 +964,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Rule box
     st.markdown(
         """
         <div class="side-rule">
@@ -1372,16 +981,12 @@ with st.sidebar:
 if page_clean == "🏠 Dashboard":
 
     st.markdown(
-        '<div class="main-title">'
-        "Smart Attendance System"
-        "</div>",
+        '<div class="main-title">Smart Attendance System</div>',
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        '<div class="subtitle">'
-        "Face recognition based student attendance management"
-        "</div>",
+        '<div class="subtitle">Face recognition based student attendance management</div>',
         unsafe_allow_html=True,
     )
 
@@ -1389,89 +994,59 @@ if page_clean == "🏠 Dashboard":
     attendance = load_attendance()
 
     total_students = len(students)
-
     total_records = len(attendance)
 
-    today = now_ist().strftime(
-        "%Y-%m-%d"
-    )
+    today = now_ist().strftime("%Y-%m-%d")
 
-    today_records = attendance[
-        attendance["date"].astype(str)
-        == today
-    ]
-
+    today_records = attendance[attendance["date"].astype(str) == today]
     today_count = len(today_records)
 
     unique_today = (
-        today_records["roll no"]
-        .astype(str)
-        .nunique()
-        if not today_records.empty
-        else 0
+        today_records["roll no"].astype(str).nunique()
+        if not today_records.empty else 0
     )
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-
         st.markdown(
             f"""
             <div class="stat-card">
-                <div class="stat-title">
-                    Registered Students
-                </div>
-                <div class="stat-value">
-                    {total_students}
-                </div>
+                <div class="stat-title">Registered Students</div>
+                <div class="stat-value">{total_students}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with col2:
-
         st.markdown(
             f"""
             <div class="stat-card">
-                <div class="stat-title">
-                    Today's Attendance
-                </div>
-                <div class="stat-value">
-                    {unique_today}
-                </div>
+                <div class="stat-title">Today's Attendance</div>
+                <div class="stat-value">{unique_today}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with col3:
-
         st.markdown(
             f"""
             <div class="stat-card">
-                <div class="stat-title">
-                    Total Records
-                </div>
-                <div class="stat-value">
-                    {total_records}
-                </div>
+                <div class="stat-title">Total Records</div>
+                <div class="stat-value">{total_records}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with col4:
-
         st.markdown(
             f"""
             <div class="stat-card">
-                <div class="stat-title">
-                    Current Time
-                </div>
-                <div class="stat-value">
-                    {now_ist().strftime("%I:%M %p")}
-                </div>
+                <div class="stat-title">Current Time</div>
+                <div class="stat-value">{now_ist().strftime("%I:%M %p")}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1482,58 +1057,27 @@ if page_clean == "🏠 Dashboard":
     col1, col2 = st.columns(2)
 
     with col1:
-
-        st.subheader(
-            "📌 System Status"
-        )
+        st.subheader("📌 System Status")
 
         if TRAINER_PATH.exists():
-
-            st.success(
-                "✅ Face recognition model available"
-            )
-
+            st.success("✅ Face recognition model available")
         else:
-
-            st.warning(
-                "⚠️ Face model not trained yet"
-            )
+            st.warning("⚠️ Face model not trained yet")
 
         if STUDENT_PATH.exists():
-
-            st.success(
-                "✅ Student database available"
-            )
-
+            st.success("✅ Student database available")
         else:
-
-            st.warning(
-                "⚠️ Student database not created"
-            )
+            st.warning("⚠️ Student database not created")
 
         if ATTENDANCE_PATH.exists():
-
-            st.success(
-                "✅ Attendance database available"
-            )
-
+            st.success("✅ Attendance database available")
         else:
-
-            st.info(
-                "ℹ️ Attendance file will be created automatically"
-            )
+            st.info("ℹ️ Attendance file will be created automatically")
 
     with col2:
+        st.subheader("🕐 Current Indian Time")
 
-        st.subheader(
-            "🕐 Current Indian Time"
-        )
-
-        st.info(
-            now_ist().strftime(
-                "%A, %d %B %Y — %I:%M:%S %p IST"
-            )
-        )
+        st.info(now_ist().strftime("%A, %d %B %Y — %I:%M:%S %p IST"))
 
         st.markdown(
             """
@@ -1552,53 +1096,28 @@ if page_clean == "🏠 Dashboard":
 elif page_clean == "📝 Register Student":
 
     st.markdown(
-        '<div class="main-title">'
-        "Register New Student"
-        "</div>",
+        '<div class="main-title">Register New Student</div>',
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        '<div class="subtitle">'
-        "Capture a face image and create a recognition model"
-        "</div>",
+        '<div class="subtitle">Capture a face image and create a recognition model</div>',
         unsafe_allow_html=True,
     )
 
-    col1, col2 = st.columns(
-        [1, 1]
-    )
+    col1, col2 = st.columns([1, 1])
 
     with col1:
+        st.subheader("Student Information")
 
-        st.subheader(
-            "Student Information"
-        )
-
-        rollno = st.text_input(
-            "Roll Number",
-            placeholder="Example: 101",
-        )
-
-        name = st.text_input(
-            "Student Name",
-            placeholder="Example: Rajiv Kumar",
-        )
-
-        branch = st.text_input(
-            "Branch",
-            placeholder="Example: CSE",
-        )
+        rollno = st.text_input("Roll Number", placeholder="Example: 101")
+        name = st.text_input("Student Name", placeholder="Example: Rajiv Kumar")
+        branch = st.text_input("Branch", placeholder="Example: CSE")
 
     with col2:
+        st.subheader("Capture Face")
 
-        st.subheader(
-            "Capture Face"
-        )
-
-        camera_image = st.camera_input(
-            "Take a clear photo"
-        )
+        camera_image = st.camera_input("Take a clear photo")
 
     st.markdown("---")
 
@@ -1610,31 +1129,292 @@ elif page_clean == "📝 Register Student":
 
     if register_button:
 
-        # ----------------------------------------------------
-        # VALIDATION
-        # ----------------------------------------------------
-
         rollno = rollno.strip()
         name = name.strip()
         branch = branch.strip()
 
         if not rollno:
-
-            st.error(
-                "Please enter Roll Number."
-            )
+            st.error("Please enter Roll Number.")
             st.stop()
 
         if not rollno.isdigit():
-
-            st.error(
-                "Roll Number must contain numbers only."
-            )
+            st.error("Roll Number must contain numbers only.")
             st.stop()
 
         if not name:
+            st.error("Please enter student name.")
+            st.stop()
 
-            st.error(
-                "Please enter student name."
+        if not branch:
+            st.error("Please enter branch.")
+            st.stop()
+
+        if camera_image is None:
+            st.error("Please capture your face photo.")
+            st.stop()
+
+        students = load_students()
+
+        if (students["rollno"].astype(str).str.strip() == rollno).any():
+            st.error(f"Roll Number {rollno} is already registered.")
+            st.stop()
+
+        try:
+            image_bytes = camera_image.getvalue()
+            image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+            image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        except Exception as e:
+            st.error(f"Unable to read camera image: {e}")
+            st.stop()
+
+        if image is None:
+            st.error("Invalid camera image.")
+            st.stop()
+
+        face = detect_single_face(image)
+
+        if face is None:
+            st.error("❌ No face detected in the captured photo.")
+            st.warning(
+                "Try again with better lighting and "
+                "keep your face closer to the camera."
             )
             st.stop()
+
+        x, y, w, h = face
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.equalizeHist(gray)
+
+        face_gray = gray[y:y + h, x:x + w]
+
+        if face_gray.size == 0:
+            st.error("Unable to extract face.")
+            st.stop()
+
+        face_gray = cv2.resize(face_gray, (200, 200))
+
+        student_folder = DATASET_DIR / rollno
+        student_folder.mkdir(parents=True, exist_ok=True)
+
+        sample_count = create_training_samples(face_gray, student_folder, rollno)
+
+        with st.spinner("Training face recognition model..."):
+            trained, message = train_model()
+
+        if not trained:
+            st.error(message)
+            st.warning(
+                "Face images were saved, "
+                "but student registration was not completed."
+            )
+            st.stop()
+
+        try:
+            save_student(rollno, name, branch)
+        except Exception as e:
+            st.error(f"Unable to save student: {e}")
+            st.stop()
+
+        st.success(f"🎉 {name} registered successfully!")
+
+        st.info(
+            f"Roll No: {rollno} | "
+            f"Branch: {branch} | "
+            f"Training Images: {sample_count}"
+        )
+
+        preview = image.copy()
+
+        cv2.rectangle(preview, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+        cv2.putText(
+            preview,
+            f"{name} | Roll: {rollno}",
+            (x, max(y - 10, 25)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2,
+        )
+
+        st.image(
+            cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
+            caption="Registered Face",
+            width="stretch",
+        )
+
+
+# ============================================================
+# MARK ATTENDANCE
+# ============================================================
+
+elif page_clean == "📷 Mark Attendance":
+
+    st.markdown(
+        '<div class="main-title">Mark Attendance</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="subtitle">Capture your face to verify identity and mark attendance</div>',
+        unsafe_allow_html=True,
+    )
+
+    if not TRAINER_PATH.exists():
+        st.warning("⚠️ Face recognition model is not available.")
+        st.info("Register at least one student first.")
+        st.stop()
+
+    camera_image = st.camera_input("📷 Capture Face")
+
+    if camera_image is not None:
+
+        image_bytes = camera_image.getvalue()
+        image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
+        if image is None:
+            st.error("Unable to process captured image.")
+            st.stop()
+
+        with st.spinner("Recognizing face..."):
+            (rollno, name, confidence, annotated, message) = recognize_face(image)
+
+        st.image(
+            cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB),
+            caption="Face Recognition Result",
+            width="stretch",
+        )
+
+        if rollno is None:
+            st.error(f"❌ {message}")
+        else:
+            st.success(f"✅ Recognized: {name} (Roll No: {rollno})")
+
+            if confidence is not None:
+                st.caption(f"Recognition distance: {confidence:.2f}")
+
+            students = load_students()
+
+            student_rows = students[
+                students["rollno"].astype(str).str.strip()
+                ==
+                str(rollno).strip()
+            ]
+
+            if not student_rows.empty:
+
+                student = student_rows.iloc[0]
+                branch = str(student["branch"]).strip()
+
+                marked, attendance_message = mark_attendance(rollno, name, branch)
+
+                if marked:
+                    st.success(f"🎉 {attendance_message}")
+                    st.info(
+                        f"Student: {name}\n\n"
+                        f"Roll No: {rollno}\n\n"
+                        f"Branch: {branch}\n\n"
+                        f"Time: {now_ist().strftime('%I:%M:%S %p')} IST"
+                    )
+                else:
+                    st.warning(f"⏳ {attendance_message}")
+
+
+# ============================================================
+# STUDENTS
+# ============================================================
+
+elif page_clean == "👥 Students":
+
+    st.markdown(
+        '<div class="main-title">Registered Students</div>',
+        unsafe_allow_html=True,
+    )
+
+    students = load_students()
+
+    if students.empty:
+        st.info("No students registered yet.")
+    else:
+        display_students = students.rename(
+            columns={
+                "rollno": "Roll No",
+                "name": "Name",
+                "branch": "Branch",
+            }
+        )
+
+        st.dataframe(
+            display_students,
+            width="stretch",
+            hide_index=True,
+        )
+
+        st.caption(f"Total registered students: {len(students)}")
+
+
+# ============================================================
+# ATTENDANCE RECORDS
+# ============================================================
+
+elif page_clean == "📊 Attendance Records":
+
+    st.markdown(
+        '<div class="main-title">Attendance Records</div>',
+        unsafe_allow_html=True,
+    )
+
+    attendance = load_attendance()
+
+    if attendance.empty:
+        st.info("No attendance records available.")
+    else:
+        display_attendance = attendance.rename(
+            columns={
+                "roll no": "Roll No",
+                "name": "Name",
+                "branch": "Branch",
+                "date": "Date",
+                "time": "Time",
+                "status": "Status",
+            }
+        )
+
+        display_attendance = (
+            display_attendance.iloc[::-1]
+            .reset_index(drop=True)
+        )
+
+        st.dataframe(
+            display_attendance,
+            width="stretch",
+            hide_index=True,
+        )
+
+        st.caption(f"Total attendance records: {len(attendance)}")
+
+        today = now_ist().strftime("%Y-%m-%d")
+
+        today_data = attendance[attendance["date"].astype(str) == today]
+
+        st.markdown("---")
+        st.subheader("📅 Today's Attendance")
+
+        if today_data.empty:
+            st.info("No attendance marked today.")
+        else:
+            today_display = today_data.rename(
+                columns={
+                    "roll no": "Roll No",
+                    "name": "Name",
+                    "branch": "Branch",
+                    "date": "Date",
+                    "time": "Time",
+                    "status": "Status",
+                }
+            )
+
+            st.dataframe(
+                today_display.iloc[::-1],
+                width="stretch",
+                hide_index=True,
+            )
