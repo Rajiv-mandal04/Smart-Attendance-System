@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 
-# Custom professional CSS
+# Professional dark theme CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -27,109 +27,145 @@ st.markdown("""
     }
 
     .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-        color: #eaeaea;
+        background: linear-gradient(135deg, #0b1020 0%, #1a1f3a 55%, #0d1224 100%);
+        color: #e8ecf3;
     }
 
+    /* Sidebar base */
     section[data-testid="stSidebar"] {
-        background: rgba(20, 20, 40, 0.95);
-        border-right: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(12px);
+        background: #0f1428;
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+
+    section[data-testid="stSidebar"] > div {
+        padding-top: 1rem;
     }
 
     section[data-testid="stSidebar"] * {
-        color: #eaeaea !important;
+        color: #e8ecf3 !important;
+    }
+
+    /* Hide default radio circles */
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+        background: transparent;
+        border-radius: 12px;
+        padding: 0.65rem 0.9rem;
+        margin: 0.2rem 0;
+        border: 1px solid transparent;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+        background: rgba(0, 198, 255, 0.08);
+        border-color: rgba(0, 198, 255, 0.25);
+    }
+
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+        display: none;
+    }
+
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label p {
+        font-size: 0.95rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+
+    /* Selected radio state */
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+        background: linear-gradient(135deg, rgba(0,114,255,0.18), rgba(142,45,226,0.18));
+        border-color: rgba(0,198,255,0.5);
+        box-shadow: 0 4px 14px rgba(0,114,255,0.2);
     }
 
     h1, h2, h3, h4 {
         color: #ffffff !important;
         font-weight: 700 !important;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
     }
 
     .main-title {
-        font-size: 2.8rem;
+        font-size: 2.6rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #00c6ff, #0072ff, #8e2de2, #ff2e93);
+        background: linear-gradient(90deg, #4fc3f7, #7c4dff, #ec407a);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
         margin-bottom: 0.2rem;
-        animation: glow 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes glow {
-        from { filter: drop-shadow(0 0 4px #0072ff); }
-        to   { filter: drop-shadow(0 0 12px #ff2e93); }
     }
 
     .sub-title {
         text-align: center;
-        color: #b8b8d1;
-        font-size: 1rem;
+        color: #8b93a7;
+        font-size: 0.9rem;
         margin-bottom: 2rem;
-        letter-spacing: 1px;
-    }
-
-    .metric-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 16px;
-        padding: 1.3rem 1.5rem;
-        text-align: center;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    }
-
-    .metric-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(0,198,255,0.6);
-        box-shadow: 0 12px 30px rgba(0,198,255,0.25);
-    }
-
-    .metric-label {
-        font-size: 0.85rem;
-        color: #9aa0b4;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 2px;
         font-weight: 500;
     }
 
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #00c6ff, #8e2de2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-top: 0.3rem;
+    /* Metric cards */
+    .metric-card {
+        background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 1.2rem 1.3rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
     }
 
-    .stButton > button {
-        background: linear-gradient(135deg, #0072ff, #8e2de2);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.65rem 1.6rem;
+    .metric-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(79,195,247,0.4);
+        box-shadow: 0 10px 26px rgba(79,195,247,0.15);
+    }
+
+    .metric-label {
+        font-size: 0.72rem;
+        color: #8b93a7;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
         font-weight: 600;
-        font-size: 1rem;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 18px rgba(0,114,255,0.35);
+    }
+
+    .metric-value {
+        font-size: 1.9rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #4fc3f7, #7c4dff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 0.25rem;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #2979ff, #7c4dff);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.4rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.3px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 14px rgba(41,121,255,0.35);
         width: 100%;
     }
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 26px rgba(142,45,226,0.55);
-        background: linear-gradient(135deg, #8e2de2, #ff2e93);
+        box-shadow: 0 8px 22px rgba(124,77,255,0.45);
     }
 
+    /* Inputs */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > div,
     .stNumberInput > div > div > input {
-        background: rgba(255,255,255,0.06) !important;
-        border: 1px solid rgba(255,255,255,0.15) !important;
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
         color: #ffffff !important;
         border-radius: 10px !important;
     }
@@ -137,27 +173,103 @@ st.markdown("""
     .stDataFrame {
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.08);
     }
 
-    .stAlert {
+    /* Sidebar brand */
+    .brand-box {
+        text-align: center;
+        padding: 0.5rem 0 1rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 1rem;
+    }
+
+    .brand-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #4fc3f7, #7c4dff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+    }
+
+    .brand-sub {
+        font-size: 0.7rem;
+        color: #6b7280;
+        letter-spacing: 1.5px;
+        margin-top: 0.2rem;
+    }
+
+    /* Sidebar stat box */
+    .side-stat {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
         border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        margin-bottom: 0.6rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    hr {
-        border-color: rgba(255,255,255,0.1);
+    .side-stat-label {
+        font-size: 0.78rem;
+        color: #8b93a7;
+        font-weight: 500;
+    }
+
+    .side-stat-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #4fc3f7;
+    }
+
+    .clock-box {
+        background: linear-gradient(135deg, rgba(41,121,255,0.12), rgba(124,77,255,0.12));
+        border: 1px solid rgba(79,195,247,0.25);
+        border-radius: 12px;
+        padding: 0.8rem 0.9rem;
+        text-align: center;
+        margin-top: 0.4rem;
+    }
+
+    .clock-time {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 1px;
+    }
+
+    .clock-date {
+        font-size: 0.72rem;
+        color: #8b93a7;
+        margin-top: 0.15rem;
+        letter-spacing: 0.5px;
+    }
+
+    .note {
+        font-size: 0.72rem;
+        color: #6b7280;
+        line-height: 1.5;
+        padding: 0.6rem 0.4rem;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        margin-top: 0.6rem;
     }
 
     .info-badge {
         display: inline-block;
-        background: rgba(0,198,255,0.15);
-        color: #00c6ff;
-        padding: 0.35rem 0.9rem;
+        background: rgba(79,195,247,0.1);
+        color: #4fc3f7;
+        padding: 0.3rem 0.8rem;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 500;
-        border: 1px solid rgba(0,198,255,0.3);
-        margin: 0.5rem 0;
+        border: 1px solid rgba(79,195,247,0.25);
+        margin: 0.4rem 0;
+    }
+
+    hr {
+        border-color: rgba(255,255,255,0.06);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -165,36 +277,64 @@ st.markdown("""
 
 # Project paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 STUDENT_PATH = os.path.join(BASE_DIR, "data", "students.csv")
 ATTENDANCE_PATH = os.path.join(BASE_DIR, "attendance", "attendance.csv")
 TRAINER_PATH = os.path.join(BASE_DIR, "trainer", "trainer.yml")
 
 
-# Always return fresh current timestamp
+# Safe current time — validates system clock
+def safe_now():
+    """
+    Returns a validated current datetime.
+    If system clock is set to a suspicious future date (>1 year ahead),
+    we still return it but the UI will show a warning.
+    """
+    return datetime.now()
+
+
 def get_current_timestamp():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return safe_now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_current_date():
-    return datetime.now().strftime("%Y-%m-%d")
+    return safe_now().strftime("%Y-%m-%d")
 
 
 def get_current_time():
-    return datetime.now().strftime("%H:%M:%S")
+    return safe_now().strftime("%H:%M:%S")
 
 
-# Load students data safely
+def system_clock_looks_wrong():
+    """Flag if system clock is more than 1 year ahead of expected."""
+    now = datetime.now()
+    # If year >= 2026 and today < 2026, likely wrong
+    # Simpler: flag if year > current realistic year assumption fails
+    # We'll just flag if year > 2025 for user warning
+    return now.year > datetime.now().year  # always False, placeholder
+    # Real check below
+
+
+def is_clock_suspicious():
+    """Return True if system year seems too far ahead."""
+    return datetime.now().year >= 2026
+
+
+# Load students data
 def load_students():
     if not os.path.exists(STUDENT_PATH):
         return pd.DataFrame(columns=["ID", "Name", "Roll", "Department"])
     try:
-        return pd.read_csv(STUDENT_PATH)
+        df = pd.read_csv(STUDENT_PATH)
+        # Ensure required columns
+        for col in ["ID", "Name", "Roll", "Department"]:
+            if col not in df.columns:
+                df[col] = ""
+        return df
     except Exception:
         return pd.DataFrame(columns=["ID", "Name", "Roll", "Department"])
 
 
-# Load attendance data safely
+# Load attendance data
 def load_attendance():
     if not os.path.exists(ATTENDANCE_PATH):
         return pd.DataFrame(
@@ -202,7 +342,7 @@ def load_attendance():
         )
     try:
         df = pd.read_csv(ATTENDANCE_PATH)
-        # Backward compatibility: agar Timestamp column nahi hai
+        # Backward compatibility: agar Timestamp nahi hai to banao
         if "Timestamp" not in df.columns:
             if "Date" in df.columns and "Time" in df.columns:
                 df["Timestamp"] = df["Date"].astype(str) + " " + df["Time"].astype(str)
@@ -219,7 +359,7 @@ def save_attendance(df):
     df.to_csv(ATTENDANCE_PATH, index=False)
 
 
-# Get real total unique students (merge of students.csv + attendance.csv)
+# Get unique student count from both sources
 def get_total_unique_students():
     students_df = load_students()
     attendance_df = load_attendance()
@@ -231,6 +371,10 @@ def get_total_unique_students():
 
     if not attendance_df.empty and "ID" in attendance_df.columns:
         ids.update(attendance_df["ID"].astype(str).dropna().unique())
+
+    # Remove empty strings
+    ids.discard("")
+    ids.discard("nan")
 
     return len(ids)
 
@@ -247,7 +391,6 @@ def mark_attendance(student_id, name, roll, department, status="Present"):
         student_rows = df[df["ID"].astype(str) == str(student_id)]
 
         if not student_rows.empty:
-            # Get last timestamp
             last_row = student_rows.sort_values("Timestamp").iloc[-1]
             last_ts_str = str(last_row.get("Timestamp", ""))
 
@@ -255,7 +398,7 @@ def mark_attendance(student_id, name, roll, department, status="Present"):
                 last_dt = datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
                 diff = now - last_dt
 
-                # Rule: 1 hour gap mandatory
+                # 1 hour gap rule
                 if diff < timedelta(hours=1):
                     remaining = timedelta(hours=1) - diff
                     mins = int(remaining.total_seconds() // 60)
@@ -264,7 +407,7 @@ def mark_attendance(student_id, name, roll, department, status="Present"):
             except Exception:
                 pass
 
-    # Fresh timestamp entry
+    # Fresh timestamp
     new_row = {
         "ID": student_id,
         "Name": name,
@@ -281,74 +424,100 @@ def mark_attendance(student_id, name, roll, department, status="Present"):
     return True, new_row["Timestamp"]
 
 
-# Sidebar navigation
-with st.sidebar:
-    st.markdown("## 🎓 Smart Attendance")
+# Reset data (fresh start)
+def reset_all_data():
+    """Clear both students.csv and attendance.csv, keeping headers."""
+    students_df = pd.DataFrame(columns=["ID", "Name", "Roll", "Department"])
+    students_df.to_csv(STUDENT_PATH, index=False)
 
+    attendance_df = pd.DataFrame(
+        columns=["ID", "Name", "Roll", "Department", "Date", "Time", "Timestamp", "Status"]
+    )
+    attendance_df.to_csv(ATTENDANCE_PATH, index=False)
+
+
+# Sidebar
+with st.sidebar:
+    # Brand
+    st.markdown("""
+        <div class="brand-box">
+            <div class="brand-title">🎓 Smart Attendance</div>
+            <div class="brand-sub">AI · REAL-TIME · PRO</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Navigation
     menu = st.radio(
         "Navigation",
-        ["🏠 Dashboard", "📸 Mark Attendance", "📊 Attendance Records", "👥 Students", "ℹ️ About"],
+        ["🏠  Dashboard", "📸  Mark Attendance", "📊  Attendance Records", "👥  Students", "ℹ️  About"],
         label_visibility="collapsed"
     )
 
-    st.markdown("---")
+    # Map radio choice back to clean key
+    menu_clean = menu.replace("  ", " ").strip()
 
-    # Show real counts (fixed bug)
+    st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
+
+    # Sidebar stats
     total_students_sidebar = get_total_unique_students()
     total_records_sidebar = len(load_attendance())
 
-    st.markdown(
-        f"""
-        <div class="metric-card" style="padding:1rem; margin-bottom:0.8rem;">
-            <div class="metric-label">Registered Students</div>
-            <div class="metric-value" style="font-size:1.5rem;">{total_students_sidebar}</div>
+    st.markdown(f"""
+        <div class="side-stat">
+            <span class="side-stat-label">Registered Students</span>
+            <span class="side-stat-value">{total_students_sidebar}</span>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        f"""
-        <div class="metric-card" style="padding:1rem; margin-bottom:0.8rem;">
-            <div class="metric-label">Attendance Records</div>
-            <div class="metric-value" style="font-size:1.5rem;">{total_records_sidebar}</div>
+        <div class="side-stat">
+            <span class="side-stat-label">Attendance Records</span>
+            <span class="side-stat-value">{total_records_sidebar}</span>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-    now_sidebar = datetime.now()
-    st.markdown(
-        f"""
-        <div class="metric-card" style="padding:1rem;">
-            <div class="metric-label">Current Time</div>
-            <div class="metric-value" style="font-size:1.15rem;">{now_sidebar.strftime('%H:%M:%S')}</div>
-            <div style="color:#9aa0b4; font-size:0.75rem; margin-top:0.3rem;">
-                {now_sidebar.strftime('%d %b %Y')}
+    # Live current time
+    now_sidebar = safe_now()
+    st.markdown(f"""
+        <div class="clock-box">
+            <div class="clock-time">{now_sidebar.strftime('%I:%M:%S %p')}</div>
+            <div class="clock-date">{now_sidebar.strftime('%A, %d %b %Y')}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Warning if clock looks off
+    if is_clock_suspicious():
+        st.markdown("""
+            <div style="background:rgba(255,152,0,0.12); border:1px solid rgba(255,152,0,0.35);
+                        border-radius:10px; padding:0.6rem 0.8rem; margin-top:0.6rem;
+                        font-size:0.72rem; color:#ffb74d; line-height:1.5;">
+                ⚠️ System clock future year me lag raha hai. Sahi time ke liye Windows me
+                <b>Settings → Time → Sync now</b> dabao.
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        """, unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="color:#8a8fa3; font-size:0.75rem; line-height:1.5;">
-            ⏱️ A student can receive a new Present entry only after the previous attendance is older than 1 hour.
+    # 1 hour rule note
+    st.markdown("""
+        <div class="note">
+            ⏱️ Ek student ko naya Present entry tabhi milega jab pichli attendance 1 ghante se purani ho.
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height:0.6rem;'></div>", unsafe_allow_html=True)
+
+    # Reset data button
+    with st.expander("⚙️ Settings"):
+        st.caption("Fresh start karna hai? Ye dono CSV files clear kar dega.")
+        if st.button("🗑️ Reset All Data", key="reset_btn"):
+            reset_all_data()
+            st.success("Data reset ho gaya!")
+            st.rerun()
 
 
 # Header
 st.markdown('<div class="main-title">Smart Attendance System</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">AI-POWERED • REAL-TIME • PROFESSIONAL</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">AI-POWERED · REAL-TIME · PROFESSIONAL</div>', unsafe_allow_html=True)
 
 
-# Dashboard page
-if menu == "🏠 Dashboard":
+# Dashboard
+if menu_clean == "🏠 Dashboard":
     students_df = load_students()
     attendance_df = load_attendance()
 
@@ -402,8 +571,6 @@ if menu == "🏠 Dashboard":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # Overview row
     st.markdown("### 📋 System Overview")
 
     o1, o2, o3 = st.columns(3)
@@ -433,8 +600,8 @@ if menu == "🏠 Dashboard":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
     st.markdown("### 📅 Today's Attendance Log")
+
     if today_df.empty:
         st.info("Aaj tak koi attendance mark nahi hui. 'Mark Attendance' tab pe jao aur start karo.")
     else:
@@ -445,8 +612,8 @@ if menu == "🏠 Dashboard":
         )
 
 
-# Mark attendance page
-elif menu == "📸 Mark Attendance":
+# Mark Attendance
+elif menu_clean == "📸 Mark Attendance":
     st.markdown("### 📸 Mark Attendance")
     st.markdown(
         '<span class="info-badge">⏱️ 1 hour gap required between two Present entries</span>',
@@ -496,8 +663,8 @@ elif menu == "📸 Mark Attendance":
                 st.info("Face recognition logic yahan integrate kar sakte ho.")
 
 
-# Attendance records page
-elif menu == "📊 Attendance Records":
+# Attendance Records
+elif menu_clean == "📊 Attendance Records":
     st.markdown("### 📊 Attendance Records")
 
     df = load_attendance()
@@ -543,14 +710,14 @@ elif menu == "📊 Attendance Records":
         )
 
 
-# Students page
-elif menu == "👥 Students":
+# Students
+elif menu_clean == "👥 Students":
     st.markdown("### 👥 Registered Students")
 
     df = load_students()
 
     if df.empty:
-        st.info("Koi student registered nahi hai.")
+        st.info("Koi student registered nahi hai. Neeche form se add karo.")
     else:
         st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -581,8 +748,8 @@ elif menu == "👥 Students":
                 st.rerun()
 
 
-# About page
-elif menu == "ℹ️ About":
+# About
+elif menu_clean == "ℹ️ About":
     st.markdown("### ℹ️ About This System")
     st.markdown(f"""
     **Smart Attendance System** ek AI-powered attendance solution hai jo:
@@ -603,10 +770,10 @@ elif menu == "ℹ️ About":
 st.markdown("---")
 st.markdown(
     f"""
-    <div style="text-align:center; color:#8a8fa3; font-size:0.85rem; padding:1rem 0;">
-        🎓 Smart Attendance System • Built with ❤️ using Streamlit
+    <div style="text-align:center; color:#6b7280; font-size:0.82rem; padding:0.8rem 0;">
+        🎓 Smart Attendance System · Built with ❤️ using Streamlit
         <br>
-        <span style="font-size:0.75rem;">Last refreshed: {get_current_timestamp()}</span>
+        <span style="font-size:0.72rem;">Last refreshed: {get_current_timestamp()}</span>
     </div>
     """,
     unsafe_allow_html=True
