@@ -8,7 +8,10 @@ import pandas as pd
 import streamlit as st
 
 
-# Page configuration
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
     page_title="Smart Attendance System",
     page_icon="🎓",
@@ -17,26 +20,54 @@ st.set_page_config(
 )
 
 
-# Paths
+# ============================================================
+# PATHS
+# ============================================================
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-STUDENT_PATH = os.path.join(BASE_DIR, "data", "students.csv")
-ATTENDANCE_PATH = os.path.join(BASE_DIR, "attendance", "attendance.xlsx")
-TRAINER_PATH = os.path.join(BASE_DIR, "trainer", "trainer.yml")
+STUDENT_PATH = os.path.join(
+    BASE_DIR, "data", "students.csv"
+)
+
+ATTENDANCE_PATH = os.path.join(
+    BASE_DIR, "attendance", "attendance.xlsx"
+)
+
+TRAINER_PATH = os.path.join(
+    BASE_DIR, "trainer", "trainer.yml"
+)
+
 CASCADE_PATH = os.path.join(
     BASE_DIR,
     "haarcascade",
     "haarcascade_frontalface_default.xml",
 )
-DATASET_PATH = os.path.join(BASE_DIR, "dataset")
+
+DATASET_PATH = os.path.join(
+    BASE_DIR,
+    "dataset",
+)
 
 
-# India timezone
+# ============================================================
+# INDIA TIMEZONE
+# ============================================================
+
 IST = ZoneInfo("Asia/Kolkata")
 
 
 def now_ist():
     return datetime.now(IST).replace(tzinfo=None)
+
+
+# ============================================================
+# CONSTANTS
+# ============================================================
+
+# LBPH distance: lower = better match
+# Keep this reasonably strict to avoid false recognition.
+RECOGNITION_THRESHOLD = 70
 
 
 # ============================================================
@@ -46,6 +77,7 @@ def now_ist():
 st.markdown(
     """
     <style>
+
     .stApp {
         background: #0b1220;
         color: #f8fafc;
@@ -140,6 +172,7 @@ st.markdown(
         border-radius: 10px;
         font-weight: 600;
     }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -163,60 +196,98 @@ def load_students():
 
     try:
 
-        df = pd.read_csv(
+        # ----------------------------------------------------
+        # IMPORTANT:
+        # Original project may have HEADERLESS TSV.
+        # New Streamlit version may have HEADER TSV.
+        # Read raw first so both formats work.
+        # ----------------------------------------------------
+
+        raw = pd.read_csv(
             STUDENT_PATH,
-            sep=None,
-            engine="python",
+            sep="\t",
+            header=None,
             dtype=str,
+            keep_default_na=False,
         )
 
-        df.columns = [
-            str(col)
+        if raw.empty:
+            return pd.DataFrame(columns=columns)
+
+        # Keep only first 3 columns
+        raw = raw.iloc[:, :3]
+
+        while raw.shape[1] < 3:
+            raw[raw.shape[1]] = ""
+
+        raw.columns = columns
+
+        # ----------------------------------------------------
+        # Remove header row if it exists
+        # ----------------------------------------------------
+
+        first_roll = (
+            str(raw.iloc[0]["rollno"])
             .strip()
             .lower()
-            .replace(" ", "_")
-            for col in df.columns
-        ]
-
-        rename_map = {}
-
-        for col in df.columns:
-
-            if col in [
-                "roll",
-                "roll_no",
-                "student_id",
-                "id",
-            ]:
-                rename_map[col] = "rollno"
-
-            elif col in [
-                "student_name",
-                "full_name",
-                "fullname",
-            ]:
-                rename_map[col] = "name"
-
-            elif col in [
-                "department",
-                "dept",
-                "course",
-                "stream",
-            ]:
-                rename_map[col] = "branch"
-
-        df = df.rename(
-            columns=rename_map
         )
 
-        for col in columns:
+        first_name = (
+            str(raw.iloc[0]["name"])
+            .strip()
+            .lower()
+        )
 
-            if col not in df.columns:
-                df[col] = ""
+        if (
+            first_roll in {
+                "roll",
+                "rollno",
+                "roll_no",
+                "roll no",
+                "student_id",
+                "id",
+            }
+            or first_name
+            in {
+                "name",
+                "student_name",
+                "student name",
+            }
+        ):
+            raw = raw.iloc[1:].reset_index(drop=True)
 
-        return df[columns].fillna("")
+        raw = raw.fillna("")
 
-    except Exception:
+        raw["rollno"] = (
+            raw["rollno"]
+            .astype(str)
+            .str.strip()
+        )
+
+        raw["name"] = (
+            raw["name"]
+            .astype(str)
+            .str.strip()
+        )
+
+        raw["branch"] = (
+            raw["branch"]
+            .astype(str)
+            .str.strip()
+        )
+
+        # Remove completely empty rows
+        raw = raw[
+            raw["rollno"] != ""
+        ].reset_index(drop=True)
+
+        return raw[columns]
+
+    except Exception as e:
+
+        st.warning(
+            f"Unable to read students.csv: {e}"
+        )
 
         return pd.DataFrame(columns=columns)
 
@@ -261,70 +332,88 @@ def load_attendance():
                 .replace("-", "_")
             )
 
-            if clean in [
+            if clean in {
                 "rollno",
                 "roll_no",
                 "roll",
+                "roll_number",
                 "student_id",
                 "id",
-            ]:
+            }:
+
                 rename_map[col] = "rollno"
 
-            elif clean in [
+            elif clean in {
                 "name",
                 "student_name",
                 "fullname",
                 "full_name",
-            ]:
+            }:
+
                 rename_map[col] = "name"
 
-            elif clean in [
+            elif clean in {
                 "branch",
                 "department",
                 "dept",
                 "course",
                 "stream",
-            ]:
+            }:
+
                 rename_map[col] = "branch"
 
-            elif clean in [
+            elif clean in {
                 "date",
                 "attendance_date",
-            ]:
+            }:
+
                 rename_map[col] = "date"
 
-            elif clean in [
+            elif clean in {
                 "time",
                 "attendance_time",
-            ]:
+            }:
+
                 rename_map[col] = "time"
 
-            elif clean in [
+            elif clean in {
                 "timestamp",
                 "datetime",
                 "date_time",
                 "attendance_timestamp",
-            ]:
+            }:
+
                 rename_map[col] = "timestamp"
 
-            elif clean in [
+            elif clean in {
                 "status",
                 "attendance_status",
-            ]:
+            }:
+
                 rename_map[col] = "status"
 
         df = df.rename(
             columns=rename_map
         )
 
+        # ----------------------------------------------------
+        # Make sure every expected column exists
+        # ----------------------------------------------------
+
         for col in columns:
 
             if col not in df.columns:
                 df[col] = ""
 
-        return df[columns].fillna("")
+        df = df[columns].copy()
 
-    except Exception:
+        return df.fillna("")
+
+    except Exception as e:
+
+        st.warning(
+            f"Unable to read attendance.xlsx: {e}"
+        )
 
         return pd.DataFrame(columns=columns)
 
@@ -381,6 +470,7 @@ def save_student(
         ignore_index=True,
     )
 
+    # Original project format = TSV
     students.to_csv(
         STUDENT_PATH,
         sep="\t",
@@ -389,7 +479,7 @@ def save_student(
 
 
 # ============================================================
-# FIND STUDENT
+# GET STUDENT
 # ============================================================
 
 def get_student(rollno):
@@ -428,6 +518,9 @@ def mark_attendance(
 
     attendance_df = load_attendance()
 
+    # IMPORTANT:
+    # Get current IST time exactly when attendance
+    # is being marked.
     current_time = now_ist()
 
     if not attendance_df.empty:
@@ -608,6 +701,7 @@ def detect_single_face(
         gray
     )
 
+    # Strong detection first
     faces = cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
@@ -622,11 +716,11 @@ def detect_single_face(
         area = w * h
 
         if area >= 5000:
-
             valid_faces.append(
                 (x, y, w, h)
             )
 
+    # Fallback
     if not valid_faces:
 
         faces = cascade.detectMultiScale(
@@ -649,6 +743,7 @@ def detect_single_face(
     if not valid_faces:
         return None, gray
 
+    # Select largest face
     face = max(
         valid_faces,
         key=lambda item:
@@ -683,7 +778,8 @@ def recognize_face(
         return (
             None,
             None,
-            "Trained face model not found.",
+            "Trained face model not found. "
+            "Register a student first.",
         )
 
     image_array = np.frombuffer(
@@ -704,6 +800,7 @@ def recognize_face(
             "Unable to read captured image.",
         )
 
+    # BGR -> RGB
     frame = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB,
@@ -744,7 +841,7 @@ def recognize_face(
 
     try:
 
-        label, confidence = (
+        label, distance = (
             recognizer.predict(roi)
         )
 
@@ -756,7 +853,11 @@ def recognize_face(
             f"Recognition error: {e}",
         )
 
-    if confidence >= 85:
+    # --------------------------------------------------------
+    # UNKNOWN
+    # --------------------------------------------------------
+
+    if distance > RECOGNITION_THRESHOLD:
 
         cv2.rectangle(
             frame,
@@ -774,7 +875,7 @@ def recognize_face(
                 max(y - 12, 25),
             ),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.75,
+            0.70,
             (220, 50, 50),
             2,
         )
@@ -783,10 +884,14 @@ def recognize_face(
             frame,
             None,
             (
-                "Face detected, but student "
-                "not recognized."
+                "Face detected, but confidence "
+                "is too low for a safe match."
             ),
         )
+
+    # --------------------------------------------------------
+    # FIND STUDENT
+    # --------------------------------------------------------
 
     student = get_student(
         label
@@ -819,7 +924,7 @@ def recognize_face(
             frame,
             None,
             (
-                f"Recognized ID {label}, "
+                f"Model predicted ID {label}, "
                 "but no student record exists."
             ),
         )
@@ -836,6 +941,10 @@ def recognize_face(
         student["branch"]
     )
 
+    # --------------------------------------------------------
+    # DRAW RESULT
+    # --------------------------------------------------------
+
     cv2.rectangle(
         frame,
         (x, y),
@@ -849,7 +958,7 @@ def recognize_face(
         name,
         (
             x,
-            max(y - 38, 25),
+            max(y - 42, 25),
         ),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.75,
@@ -862,7 +971,7 @@ def recognize_face(
         f"Roll No: {rollno}",
         (
             x,
-            max(y - 10, 50),
+            max(y - 14, 50),
         ),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.65,
@@ -876,14 +985,14 @@ def recognize_face(
             "rollno": rollno,
             "name": name,
             "branch": branch,
-            "confidence": confidence,
+            "confidence": float(distance),
         },
         "Student recognized.",
     )
 
 
 # ============================================================
-# TRAIN MODEL AFTER NEW REGISTRATION
+# TRAIN MODEL
 # ============================================================
 
 def train_model():
@@ -892,15 +1001,27 @@ def train_model():
         cv2,
         "face",
     ):
-        return False, "OpenCV face module not available."
+
+        return (
+            False,
+            "OpenCV face module not available.",
+        )
 
     if not os.path.exists(
         DATASET_PATH
     ):
-        return False, "Dataset folder not found."
+
+        return (
+            False,
+            "Dataset folder not found.",
+        )
 
     images = []
     labels = []
+
+    # --------------------------------------------------------
+    # READ ALL STUDENT DATASET FOLDERS
+    # --------------------------------------------------------
 
     for roll_folder in os.listdir(
         DATASET_PATH
@@ -916,11 +1037,15 @@ def train_model():
         ):
             continue
 
+        # LBPH labels must be integers
         try:
+
             label = int(
-                roll_folder
+                str(roll_folder).strip()
             )
+
         except ValueError:
+
             continue
 
         for filename in os.listdir(
@@ -934,6 +1059,7 @@ def train_model():
                     ".png",
                 )
             ):
+
                 continue
 
             image_path = os.path.join(
@@ -948,6 +1074,11 @@ def train_model():
 
             if image is None:
                 continue
+
+            # Equalize exactly like recognition
+            image = cv2.equalizeHist(
+                image
+            )
 
             image = cv2.resize(
                 image,
@@ -969,9 +1100,27 @@ def train_model():
             "No training images found.",
         )
 
+    unique_labels = set(labels)
+
+    if len(unique_labels) < 1:
+
+        return (
+            False,
+            "No valid numeric student labels found.",
+        )
+
+    # --------------------------------------------------------
+    # TRAIN NEW MODEL
+    # --------------------------------------------------------
+
     recognizer = (
         cv2.face
-        .LBPHFaceRecognizer_create()
+        .LBPHFaceRecognizer_create(
+            radius=1,
+            neighbors=8,
+            grid_x=8,
+            grid_y=8,
+        )
     )
 
     recognizer.train(
@@ -993,12 +1142,127 @@ def train_model():
         TRAINER_PATH
     )
 
+    # VERY IMPORTANT
+    # Force Streamlit to reload the newly trained model.
     load_recognizer.clear()
 
     return (
         True,
-        f"Model trained using {len(images)} face samples.",
+        (
+            f"Model trained successfully using "
+            f"{len(images)} face samples and "
+            f"{len(unique_labels)} student(s)."
+        ),
     )
+
+
+# ============================================================
+# CREATE TRAINING AUGMENTATIONS
+# ============================================================
+
+def create_training_samples(face):
+
+    samples = []
+
+    # Original
+    samples.append(
+        face.copy()
+    )
+
+    # Flip
+    samples.append(
+        cv2.flip(face, 1)
+    )
+
+    # Brightness
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=1.0,
+            beta=10,
+        )
+    )
+
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=1.0,
+            beta=20,
+        )
+    )
+
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=1.0,
+            beta=-10,
+        )
+    )
+
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=1.0,
+            beta=-20,
+        )
+    )
+
+    # Contrast
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=1.10,
+            beta=0,
+        )
+    )
+
+    samples.append(
+        cv2.convertScaleAbs(
+            face,
+            alpha=0.90,
+            beta=0,
+        )
+    )
+
+    # Slight blur
+    samples.append(
+        cv2.GaussianBlur(
+            face,
+            (3, 3),
+            0,
+        )
+    )
+
+    # Sharpen
+    kernel = np.array(
+        [
+            [0, -1, 0],
+            [-1, 5, -1],
+            [0, -1, 0],
+        ]
+    )
+
+    samples.append(
+        cv2.filter2D(
+            face,
+            -1,
+            kernel,
+        )
+    )
+
+    # Gamma-like versions
+    for beta in [-30, -15, 15, 30]:
+
+        samples.append(
+            cv2.convertScaleAbs(
+                face,
+                alpha=1.0,
+                beta=beta,
+            )
+        )
+
+    # Keep unique enough samples
+    return samples
 
 
 # ============================================================
@@ -1016,9 +1280,7 @@ def dashboard():
 
     if attendance.empty:
 
-        today_attendance = (
-            pd.DataFrame()
-        )
+        today_attendance = pd.DataFrame()
 
     else:
 
@@ -1159,19 +1421,16 @@ def dashboard():
 
     else:
 
-        display_df = (
-            today_attendance[
-                [
-                    "rollno",
-                    "name",
-                    "branch",
-                    "date",
-                    "time",
-                    "status",
-                ]
+        display_df = today_attendance[
+            [
+                "rollno",
+                "name",
+                "branch",
+                "date",
+                "time",
+                "status",
             ]
-            .copy()
-        )
+        ].copy()
 
         display_df.columns = [
             "Roll No",
@@ -1184,7 +1443,7 @@ def dashboard():
 
         st.dataframe(
             display_df,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -1242,7 +1501,7 @@ def mark_attendance_page():
     st.image(
         annotated_frame,
         caption="Recognition Result",
-        use_container_width=True,
+        width="stretch",
     )
 
     if student is None:
@@ -1262,6 +1521,7 @@ def mark_attendance_page():
         elif (
             "Unknown" in message
             or "not recognized" in message
+            or "confidence" in message
         ):
 
             st.markdown(
@@ -1288,6 +1548,11 @@ def mark_attendance_page():
 
     st.write(
         f"**Branch:** {student['branch']}"
+    )
+
+    st.write(
+        f"**LBPH Distance:** "
+        f"{student['confidence']:.2f}"
     )
 
     success, result_message = (
@@ -1367,7 +1632,7 @@ def attendance_records():
 
     st.dataframe(
         display_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -1382,6 +1647,7 @@ def attendance_records():
         csv_data,
         file_name="attendance_records.csv",
         mime="text/csv",
+        width="content",
     )
 
 
@@ -1425,13 +1691,13 @@ def students_page():
 
     st.dataframe(
         display_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
 
 # ============================================================
-# REGISTER STUDENT - FIXED
+# REGISTER STUDENT
 # ============================================================
 
 def register_student():
@@ -1456,7 +1722,7 @@ def register_student():
 
         rollno = st.text_input(
             "Roll Number",
-            placeholder="Enter roll number",
+            placeholder="Enter numeric roll number",
             key="register_rollno",
         )
 
@@ -1490,12 +1756,7 @@ def register_student():
         key="registration_camera",
     )
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # Store captured image in session state immediately.
-    # This prevents Streamlit rerun from losing the image.
-    # --------------------------------------------------------
-
+    # Keep image across Streamlit reruns
     if captured is not None:
 
         st.session_state[
@@ -1515,7 +1776,7 @@ def register_student():
         st.image(
             photo,
             caption="Captured Photo",
-            use_container_width=True,
+            width="stretch",
         )
 
     st.write("")
@@ -1523,7 +1784,7 @@ def register_student():
     register_clicked = st.button(
         "➕ Register Student",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         key="register_button",
     )
 
@@ -1531,7 +1792,7 @@ def register_student():
         return
 
     # --------------------------------------------------------
-    # VALIDATE FORM
+    # VALIDATE
     # --------------------------------------------------------
 
     rollno = rollno.strip()
@@ -1542,6 +1803,15 @@ def register_student():
 
         st.warning(
             "Please enter Roll Number."
+        )
+
+        return
+
+    if not rollno.isdigit():
+
+        st.warning(
+            "Roll Number must be numeric because "
+            "LBPH model uses numeric labels."
         )
 
         return
@@ -1571,7 +1841,7 @@ def register_student():
         return
 
     # --------------------------------------------------------
-    # CHECK DUPLICATE
+    # DUPLICATE CHECK
     # --------------------------------------------------------
 
     students = load_students()
@@ -1622,15 +1892,6 @@ def register_student():
     # FACE DETECTION
     # --------------------------------------------------------
 
-    gray = cv2.cvtColor(
-        frame,
-        cv2.COLOR_BGR2GRAY,
-    )
-
-    gray = cv2.equalizeHist(
-        gray
-    )
-
     cascade = load_face_cascade()
 
     if cascade is None:
@@ -1641,25 +1902,51 @@ def register_student():
 
         return
 
-    # First detection
+    gray = cv2.cvtColor(
+        frame,
+        cv2.COLOR_BGR2GRAY,
+    )
+
+    gray = cv2.equalizeHist(
+        gray
+    )
+
     faces = cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(50, 50),
+        minNeighbors=6,
+        minSize=(70, 70),
     )
 
-    # Fallback detection
-    if len(faces) == 0:
+    valid_faces = []
+
+    for x, y, w, h in faces:
+
+        if w * h >= 5000:
+
+            valid_faces.append(
+                (x, y, w, h)
+            )
+
+    # Fallback
+    if not valid_faces:
 
         faces = cascade.detectMultiScale(
             gray,
             scaleFactor=1.05,
-            minNeighbors=3,
-            minSize=(30, 30),
+            minNeighbors=4,
+            minSize=(40, 40),
         )
 
-    if len(faces) == 0:
+        for x, y, w, h in faces:
+
+            if w * h >= 3000:
+
+                valid_faces.append(
+                    (x, y, w, h
+                )
+
+    if not valid_faces:
 
         st.error(
             "❌ No face detected in the captured photo."
@@ -1672,18 +1959,15 @@ def register_student():
 
         return
 
-    # --------------------------------------------------------
-    # SELECT LARGEST FACE
-    # --------------------------------------------------------
-
+    # Largest face
     x, y, w, h = max(
-        faces,
+        valid_faces,
         key=lambda item:
         item[2] * item[3],
     )
 
     # --------------------------------------------------------
-    # SHOW FACE BOX
+    # FACE PREVIEW
     # --------------------------------------------------------
 
     preview = frame.copy()
@@ -1698,26 +1982,26 @@ def register_student():
 
     cv2.putText(
         preview,
-        "Face Detected",
+        f"{name} | Roll: {rollno}",
         (
             x,
             max(y - 12, 25),
         ),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.75,
+        0.70,
         (0, 255, 0),
         2,
     )
 
-    preview = cv2.cvtColor(
+    preview_rgb = cv2.cvtColor(
         preview,
         cv2.COLOR_BGR2RGB,
     )
 
     st.image(
-        preview,
+        preview_rgb,
         caption="✅ Face Detected",
-        use_container_width=True,
+        width="stretch",
     )
 
     # --------------------------------------------------------
@@ -1742,6 +2026,10 @@ def register_student():
         (200, 200),
     )
 
+    face = cv2.equalizeHist(
+        face
+    )
+
     # --------------------------------------------------------
     # CREATE DATASET FOLDER
     # --------------------------------------------------------
@@ -1751,14 +2039,19 @@ def register_student():
         rollno,
     )
 
+    # New student only
     os.makedirs(
         student_folder,
         exist_ok=True,
     )
 
     # --------------------------------------------------------
-    # GENERATE MULTIPLE SAMPLES
+    # GENERATE MANY TRAINING SAMPLES
     # --------------------------------------------------------
+
+    samples = create_training_samples(
+        face
+    )
 
     existing_files = [
         f
@@ -1778,40 +2071,8 @@ def register_student():
         len(existing_files) + 1
     )
 
-    samples = []
+    saved_count = 0
 
-    # Original
-    samples.append(
-        face
-    )
-
-    # Horizontal flip
-    samples.append(
-        cv2.flip(face, 1)
-    )
-
-    # Slight brightness changes
-    brighter = cv2.convertScaleAbs(
-        face,
-        alpha=1.0,
-        beta=15,
-    )
-
-    darker = cv2.convertScaleAbs(
-        face,
-        alpha=1.0,
-        beta=-15,
-    )
-
-    samples.append(
-        brighter
-    )
-
-    samples.append(
-        darker
-    )
-
-    # Save samples
     for index, sample in enumerate(
         samples
     ):
@@ -1826,27 +2087,35 @@ def register_student():
             filename,
         )
 
-        cv2.imwrite(
+        success = cv2.imwrite(
             image_path,
             sample,
         )
 
-    # --------------------------------------------------------
-    # ONLY NOW SAVE STUDENT RECORD
-    # --------------------------------------------------------
+        if success:
+            saved_count += 1
 
-    save_student(
-        rollno,
-        name,
-        branch,
+    if saved_count == 0:
+
+        st.error(
+            "❌ Training images could not be saved."
+        )
+
+        return
+
+    st.info(
+        f"📸 {saved_count} face samples created."
     )
 
     # --------------------------------------------------------
-    # RETRAIN MODEL
+    # TRAIN FIRST
+    # --------------------------------------------------------
+    # Student record is saved only after training succeeds.
+    # This prevents half-completed registration.
     # --------------------------------------------------------
 
     with st.spinner(
-        "Training face recognition model..."
+        "🧠 Training face recognition model..."
     ):
 
         trained, train_message = (
@@ -1856,8 +2125,29 @@ def register_student():
     if not trained:
 
         st.error(
-            f"Student data saved, but model training failed: "
+            f"❌ Model training failed: "
             f"{train_message}"
+        )
+
+        return
+
+    # --------------------------------------------------------
+    # NOW SAVE STUDENT
+    # --------------------------------------------------------
+
+    try:
+
+        save_student(
+            rollno,
+            name,
+            branch,
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Model trained but student record "
+            f"could not be saved: {e}"
         )
 
         return
@@ -1883,12 +2173,12 @@ def register_student():
         "by the attendance system."
     )
 
-    # Clear captured image
+    # Clear photo
     st.session_state[
         "registration_photo"
     ] = None
 
-    # Clear recognizer cache
+    # Reload newly trained model
     load_recognizer.clear()
 
 
