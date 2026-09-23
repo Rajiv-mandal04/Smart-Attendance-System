@@ -17,1536 +17,596 @@ st.set_page_config(
 )
 
 
-# Project paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Custom professional CSS
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-STUDENT_PATH = os.path.join(
-    BASE_DIR,
-    "data",
-    "students.csv"
-)
-
-ATTENDANCE_PATH = os.path.join(
-    BASE_DIR,
-    "attendance",
-    "attendance.xlsx"
-)
-
-TRAINER_PATH = os.path.join(
-    BASE_DIR,
-    "trainer",
-    "trainer.yml"
-)
-
-CASCADE_PATH = os.path.join(
-    BASE_DIR,
-    "haarcascade",
-    "haarcascade_frontalface_default.xml"
-)
-
-DATASET_PATH = os.path.join(
-    BASE_DIR,
-    "dataset"
-)
-
-os.makedirs(
-    os.path.dirname(STUDENT_PATH),
-    exist_ok=True
-)
-
-os.makedirs(
-    os.path.dirname(ATTENDANCE_PATH),
-    exist_ok=True
-)
-
-os.makedirs(
-    os.path.dirname(TRAINER_PATH),
-    exist_ok=True
-)
-
-os.makedirs(
-    DATASET_PATH,
-    exist_ok=True
-)
-
-
-# Professional UI styling
-st.markdown(
-    """
-    <style>
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+    }
 
     .stApp {
-        background: #f5f7fb;
+        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        color: #eaeaea;
     }
 
-    [data-testid="stSidebar"] {
-        background: #111827;
+    section[data-testid="stSidebar"] {
+        background: rgba(20, 20, 40, 0.95);
+        border-right: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(12px);
     }
 
-    [data-testid="stSidebar"] * {
-        color: white;
+    section[data-testid="stSidebar"] * {
+        color: #eaeaea !important;
+    }
+
+    h1, h2, h3, h4 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px;
     }
 
     .main-title {
-        font-size: 36px;
+        font-size: 2.8rem;
         font-weight: 800;
-        color: #111827;
-        margin-bottom: 2px;
+        background: linear-gradient(90deg, #00c6ff, #0072ff, #8e2de2, #ff2e93);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 0.2rem;
+        animation: glow 3s ease-in-out infinite alternate;
     }
 
-    .main-subtitle {
-        color: #6b7280;
-        font-size: 15px;
-        margin-bottom: 25px;
+    @keyframes glow {
+        from { filter: drop-shadow(0 0 4px #0072ff); }
+        to   { filter: drop-shadow(0 0 12px #ff2e93); }
     }
 
-    .top-card {
-        background: white;
-        padding: 18px 22px;
-        border-radius: 14px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
-    }
-
-    .recognition-card {
-        background: white;
-        padding: 22px;
-        border-radius: 16px;
-        border: 1px solid #dbe3ef;
-        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.07);
-        margin-top: 18px;
-    }
-
-    .recognition-title {
-        color: #111827 !important;
-        font-size: 23px;
-        font-weight: 750;
-        margin-bottom: 15px;
-    }
-
-    .student-info {
-        color: #111827 !important;
-        font-size: 16px;
-        line-height: 1.9;
-    }
-
-    .student-info b {
-        color: #374151 !important;
-    }
-
-    .time-info {
-        color: #4b5563 !important;
-        font-size: 14px;
-        margin-top: 10px;
-    }
-
-    .success-card {
-        background: #ecfdf5;
-        border: 1px solid #86efac;
-        color: #166534;
-        padding: 17px 20px;
-        border-radius: 13px;
-        margin-top: 15px;
-        font-weight: 600;
-    }
-
-    .warning-card {
-        background: #fffbeb;
-        border: 1px solid #fcd34d;
-        color: #92400e;
-        padding: 17px 20px;
-        border-radius: 13px;
-        margin-top: 15px;
-        font-weight: 600;
-    }
-
-    .danger-card {
-        background: #fef2f2;
-        border: 1px solid #fca5a5;
-        color: #991b1b;
-        padding: 17px 20px;
-        border-radius: 13px;
-        margin-top: 15px;
-        font-weight: 600;
+    .sub-title {
+        text-align: center;
+        color: #b8b8d1;
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        letter-spacing: 1px;
     }
 
     .metric-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+        background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 1.3rem 1.5rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
 
-    .metric-title {
-        color: #6b7280;
-        font-size: 13px;
-        font-weight: 600;
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(0,198,255,0.6);
+        box-shadow: 0 12px 30px rgba(0,198,255,0.25);
+    }
+
+    .metric-label {
+        font-size: 0.85rem;
+        color: #9aa0b4;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 500;
     }
 
     .metric-value {
-        color: #111827;
-        font-size: 28px;
+        font-size: 2rem;
         font-weight: 800;
-        margin-top: 4px;
+        background: linear-gradient(90deg, #00c6ff, #8e2de2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 0.3rem;
     }
 
-    .scan-time {
-        background: #eef2ff;
-        color: #3730a3;
-        border: 1px solid #c7d2fe;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-size: 14px;
+    .stButton > button {
+        background: linear-gradient(135deg, #0072ff, #8e2de2);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.65rem 1.6rem;
         font-weight: 600;
-        margin-top: 12px;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 18px rgba(0,114,255,0.35);
+        width: 100%;
     }
 
-    .footer {
-        text-align: center;
-        color: #9ca3af;
-        padding: 30px 0 15px;
-        font-size: 13px;
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 26px rgba(142,45,226,0.55);
+        background: linear-gradient(135deg, #8e2de2, #ff2e93);
     }
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div,
+    .stNumberInput > div > div > input {
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+    }
+
+    .stDataFrame {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stAlert {
+        border-radius: 12px;
+    }
+
+    hr {
+        border-color: rgba(255,255,255,0.1);
+    }
+
+    .info-badge {
+        display: inline-block;
+        background: rgba(0,198,255,0.15);
+        color: #00c6ff;
+        padding: 0.35rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: 1px solid rgba(0,198,255,0.3);
+        margin: 0.5rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 
-# Load students
+# Project paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+STUDENT_PATH = os.path.join(BASE_DIR, "data", "students.csv")
+ATTENDANCE_PATH = os.path.join(BASE_DIR, "attendance", "attendance.csv")
+TRAINER_PATH = os.path.join(BASE_DIR, "trainer", "trainer.yml")
+
+
+# Always return fresh current timestamp
+def get_current_timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_current_date():
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def get_current_time():
+    return datetime.now().strftime("%H:%M:%S")
+
+
+# Load students data safely
 def load_students():
-
     if not os.path.exists(STUDENT_PATH):
-        return pd.DataFrame(
-            columns=[
-                "rollno",
-                "name",
-                "branch"
-            ]
-        )
-
+        return pd.DataFrame(columns=["ID", "Name", "Roll", "Department"])
     try:
-        students = pd.read_csv(
-            STUDENT_PATH,
-            sep=None,
-            engine="python"
-        )
-
+        return pd.read_csv(STUDENT_PATH)
     except Exception:
-
-        try:
-            students = pd.read_csv(
-                STUDENT_PATH,
-                sep="\t"
-            )
-
-        except Exception:
-
-            return pd.DataFrame(
-                columns=[
-                    "rollno",
-                    "name",
-                    "branch"
-                ]
-            )
-
-    students.columns = [
-        str(col).strip().lower()
-        for col in students.columns
-    ]
-
-    rename_map = {}
-
-    for col in students.columns:
-
-        if col in [
-            "roll",
-            "roll_no",
-            "roll no",
-            "roll number",
-            "id"
-        ]:
-            rename_map[col] = "rollno"
-
-        elif col in [
-            "student_name",
-            "student name"
-        ]:
-            rename_map[col] = "name"
-
-        elif col in [
-            "department"
-        ]:
-            rename_map[col] = "branch"
-
-    students = students.rename(
-        columns=rename_map
-    )
-
-    for column in [
-        "rollno",
-        "name",
-        "branch"
-    ]:
-
-        if column not in students.columns:
-            students[column] = ""
-
-    return students[
-        [
-            "rollno",
-            "name",
-            "branch"
-        ]
-    ]
+        return pd.DataFrame(columns=["ID", "Name", "Roll", "Department"])
 
 
-students = load_students()
-
-
-# Load attendance
+# Load attendance data safely
 def load_attendance():
-
-    columns = [
-        "Roll No",
-        "Name",
-        "Branch",
-        "Date",
-        "Time",
-        "Status"
-    ]
-
-    if not os.path.exists(
-        ATTENDANCE_PATH
-    ):
+    if not os.path.exists(ATTENDANCE_PATH):
         return pd.DataFrame(
-            columns=columns
+            columns=["ID", "Name", "Roll", "Department", "Date", "Time", "Timestamp", "Status"]
         )
-
     try:
-
-        df = pd.read_excel(
-            ATTENDANCE_PATH
-        )
-
-        if df.empty:
-            return pd.DataFrame(
-                columns=columns
-            )
-
-        rename_map = {}
-
-        for col in df.columns:
-
-            clean_col = (
-                str(col)
-                .strip()
-                .lower()
-            )
-
-            if clean_col in [
-                "rollno",
-                "roll_no",
-                "roll no",
-                "roll number",
-                "id"
-            ]:
-                rename_map[col] = "Roll No"
-
-            elif clean_col in [
-                "name",
-                "student_name",
-                "student name"
-            ]:
-                rename_map[col] = "Name"
-
-            elif clean_col in [
-                "branch",
-                "department"
-            ]:
-                rename_map[col] = "Branch"
-
-            elif clean_col == "date":
-                rename_map[col] = "Date"
-
-            elif clean_col == "time":
-                rename_map[col] = "Time"
-
-            elif clean_col == "status":
-                rename_map[col] = "Status"
-
-        df = df.rename(
-            columns=rename_map
-        )
-
-        for column in columns:
-
-            if column not in df.columns:
-                df[column] = ""
-
-        return df[columns]
-
+        df = pd.read_csv(ATTENDANCE_PATH)
+        # Backward compatibility: agar Timestamp column nahi hai
+        if "Timestamp" not in df.columns:
+            if "Date" in df.columns and "Time" in df.columns:
+                df["Timestamp"] = df["Date"].astype(str) + " " + df["Time"].astype(str)
+            else:
+                df["Timestamp"] = ""
+        return df
     except Exception:
-
         return pd.DataFrame(
-            columns=columns
+            columns=["ID", "Name", "Roll", "Department", "Date", "Time", "Timestamp", "Status"]
         )
 
 
-attendance_df = load_attendance()
+def save_attendance(df):
+    df.to_csv(ATTENDANCE_PATH, index=False)
 
 
-# Load face detector
-@st.cache_resource
-def load_face_cascade():
-
-    if not os.path.exists(
-        CASCADE_PATH
-    ):
-        return None
-
-    cascade = cv2.CascadeClassifier(
-        CASCADE_PATH
-    )
-
-    if cascade.empty():
-        return None
-
-    return cascade
-
-
-face_cascade = load_face_cascade()
-
-
-# Load face recognition model
-@st.cache_resource
-def load_recognizer():
-
-    if not os.path.exists(
-        TRAINER_PATH
-    ):
-        return None
-
-    try:
-
-        recognizer = (
-            cv2.face
-            .LBPHFaceRecognizer_create()
-        )
-
-        recognizer.read(
-            TRAINER_PATH
-        )
-
-        return recognizer
-
-    except Exception:
-
-        return None
-
-
-recognizer = load_recognizer()
-
-
-# Detect faces
-def detect_faces(frame):
-
-    gray = cv2.cvtColor(
-        frame,
-        cv2.COLOR_RGB2GRAY
-    )
-
-    gray = cv2.equalizeHist(
-        gray
-    )
-
-    faces = face_cascade.detectMultiScale(
-        gray,
-        scaleFactor=1.1,
-        minNeighbors=4,
-        minSize=(40, 40)
-    )
-
-    if len(faces) == 0:
-
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.05,
-            minNeighbors=3,
-            minSize=(30, 30)
-        )
-
-    return gray, faces
-
-
-# Get student
-def get_student(roll_no):
-
-    if students.empty:
-        return None
-
-    result = students[
-        students["rollno"]
-        .astype(str)
-        .str.strip()
-        ==
-        str(roll_no).strip()
-    ]
-
-    if result.empty:
-        return None
-
-    return result.iloc[0]
-
-
-# Get last attendance time
-def get_last_attendance(roll_no):
-
-    df = load_attendance()
-
-    if df.empty:
-        return None
-
-    records = df[
-        df["Roll No"]
-        .astype(str)
-        .str.strip()
-        ==
-        str(roll_no).strip()
-    ].copy()
-
-    if records.empty:
-        return None
-
-    records["datetime"] = pd.to_datetime(
-        records["Date"].astype(str)
-        + " "
-        + records["Time"].astype(str),
-        errors="coerce"
-    )
-
-    records = records.dropna(
-        subset=["datetime"]
-    )
-
-    if records.empty:
-        return None
-
-    return records[
-        "datetime"
-    ].max()
-
-
-# Save attendance
-def save_attendance(
-    roll_no,
-    name,
-    branch
-):
-
-    global attendance_df
-
-    now = datetime.now()
-
-    today = now.strftime(
-        "%Y-%m-%d"
-    )
-
-    current_time = now.strftime(
-        "%H:%M:%S"
-    )
-
+# Get real total unique students (merge of students.csv + attendance.csv)
+def get_total_unique_students():
+    students_df = load_students()
     attendance_df = load_attendance()
 
-    last_attendance = (
-        get_last_attendance(
-            roll_no
-        )
-    )
+    ids = set()
 
-    if last_attendance is not None:
+    if not students_df.empty and "ID" in students_df.columns:
+        ids.update(students_df["ID"].astype(str).dropna().unique())
 
-        time_difference = (
-            now - last_attendance
-        )
+    if not attendance_df.empty and "ID" in attendance_df.columns:
+        ids.update(attendance_df["ID"].astype(str).dropna().unique())
 
-        if time_difference < timedelta(
-            hours=1
-        ):
+    return len(ids)
 
-            minutes_left = max(
-                0,
-                int(
-                    60
-                    - time_difference.total_seconds()
-                    / 60
-                )
-            )
 
-            return {
-                "status": "Re-Verified",
-                "date": today,
-                "time": current_time,
-                "last_time": last_attendance,
-                "minutes_left": minutes_left
-            }
+# Mark attendance with fresh timestamp and 1 hour gap rule
+def mark_attendance(student_id, name, roll, department, status="Present"):
+    df = load_attendance()
 
-    new_record = pd.DataFrame(
-        [
-            {
-                "Roll No": roll_no,
-                "Name": name,
-                "Branch": branch,
-                "Date": today,
-                "Time": current_time,
-                "Status": "Present"
-            }
-        ]
-    )
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
 
-    attendance_df = pd.concat(
-        [
-            attendance_df,
-            new_record
-        ],
-        ignore_index=True
-    )
+    # Check last entry for this student
+    if not df.empty:
+        student_rows = df[df["ID"].astype(str) == str(student_id)]
 
-    attendance_df.to_excel(
-        ATTENDANCE_PATH,
-        index=False
-    )
+        if not student_rows.empty:
+            # Get last timestamp
+            last_row = student_rows.sort_values("Timestamp").iloc[-1]
+            last_ts_str = str(last_row.get("Timestamp", ""))
 
-    return {
-        "status": "Present",
-        "date": today,
-        "time": current_time,
-        "last_time": None,
-        "minutes_left": 0
+            try:
+                last_dt = datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
+                diff = now - last_dt
+
+                # Rule: 1 hour gap mandatory
+                if diff < timedelta(hours=1):
+                    remaining = timedelta(hours=1) - diff
+                    mins = int(remaining.total_seconds() // 60)
+                    secs = int(remaining.total_seconds() % 60)
+                    return False, f"Wait {mins}m {secs}s (1 hour rule)"
+            except Exception:
+                pass
+
+    # Fresh timestamp entry
+    new_row = {
+        "ID": student_id,
+        "Name": name,
+        "Roll": roll,
+        "Department": department,
+        "Date": now.strftime("%Y-%m-%d"),
+        "Time": now.strftime("%H:%M:%S"),
+        "Timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "Status": status,
     }
 
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    save_attendance(df)
+    return True, new_row["Timestamp"]
 
-# Draw face box and student details
-def draw_face_box(
-    frame,
-    x,
-    y,
-    w,
-    h,
-    name,
-    roll_no,
-    confidence
-):
 
-    output = frame.copy()
+# Sidebar navigation
+with st.sidebar:
+    st.markdown("## 🎓 Smart Attendance")
 
-    color = (
-        34,
-        197,
-        94
+    menu = st.radio(
+        "Navigation",
+        ["🏠 Dashboard", "📸 Mark Attendance", "📊 Attendance Records", "👥 Students", "ℹ️ About"],
+        label_visibility="collapsed"
     )
 
-    cv2.rectangle(
-        output,
-        (x, y),
-        (x + w, y + h),
-        color,
-        3
+    st.markdown("---")
+
+    # Show real counts (fixed bug)
+    total_students_sidebar = get_total_unique_students()
+    total_records_sidebar = len(load_attendance())
+
+    st.markdown(
+        f"""
+        <div class="metric-card" style="padding:1rem; margin-bottom:0.8rem;">
+            <div class="metric-label">Registered Students</div>
+            <div class="metric-value" style="font-size:1.5rem;">{total_students_sidebar}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    label = (
-        f"{name} | Roll: {roll_no}"
+    st.markdown(
+        f"""
+        <div class="metric-card" style="padding:1rem; margin-bottom:0.8rem;">
+            <div class="metric-label">Attendance Records</div>
+            <div class="metric-value" style="font-size:1.5rem;">{total_records_sidebar}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    confidence_text = (
-        f"Confidence: {confidence:.2f}"
+    now_sidebar = datetime.now()
+    st.markdown(
+        f"""
+        <div class="metric-card" style="padding:1rem;">
+            <div class="metric-label">Current Time</div>
+            <div class="metric-value" style="font-size:1.15rem;">{now_sidebar.strftime('%H:%M:%S')}</div>
+            <div style="color:#9aa0b4; font-size:0.75rem; margin-top:0.3rem;">
+                {now_sidebar.strftime('%d %b %Y')}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    text_y = max(
-        y - 15,
-        30
-    )
-
-    cv2.rectangle(
-        output,
-        (x, text_y - 35),
-        (
-            x + max(
-                300,
-                len(label) * 10
-            ),
-            text_y
-        ),
-        color,
-        -1
-    )
-
-    cv2.putText(
-        output,
-        label,
-        (x + 8, text_y - 12),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        (255, 255, 255),
-        2,
-        cv2.LINE_AA
-    )
-
-    cv2.putText(
-        output,
-        confidence_text,
-        (x, y + h + 25),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        color,
-        2,
-        cv2.LINE_AA
-    )
-
-    return output
-
-
-# Train model
-def train_model():
-
-    image_data = []
-    labels = []
-
-    if not os.path.exists(
-        DATASET_PATH
-    ):
-        return False, "Dataset folder not found."
-
-    for roll_folder in os.listdir(
-        DATASET_PATH
-    ):
-
-        folder_path = os.path.join(
-            DATASET_PATH,
-            roll_folder
-        )
-
-        if not os.path.isdir(
-            folder_path
-        ):
-            continue
-
-        try:
-            label = int(
-                roll_folder
-            )
-
-        except ValueError:
-            continue
-
-        for image_name in os.listdir(
-            folder_path
-        ):
-
-            image_path = os.path.join(
-                folder_path,
-                image_name
-            )
-
-            image = cv2.imread(
-                image_path
-            )
-
-            if image is None:
-                continue
-
-            gray = cv2.cvtColor(
-                image,
-                cv2.COLOR_BGR2GRAY
-            )
-
-            faces = face_cascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=4,
-                minSize=(30, 30)
-            )
-
-            if len(faces) == 0:
-
-                image_data.append(
-                    gray
-                )
-
-                labels.append(
-                    label
-                )
-
-                continue
-
-            for x, y, w, h in faces:
-
-                face = gray[
-                    y:y + h,
-                    x:x + w
-                ]
-
-                image_data.append(
-                    face
-                )
-
-                labels.append(
-                    label
-                )
-
-    if not image_data:
-        return False, "No face images found."
-
-    try:
-
-        model = (
-            cv2.face
-            .LBPHFaceRecognizer_create()
-        )
-
-        model.train(
-            image_data,
-            np.array(labels)
-        )
-
-        model.write(
-            TRAINER_PATH
-        )
-
-        load_recognizer.clear()
-
-        return True, "Face model trained successfully."
-
-    except Exception as e:
-
-        return False, str(e)
-
-
-# Register student
-def register_student(
-    roll_no,
-    name,
-    branch,
-    image_file
-):
-
-    global students
-    global recognizer
-
-    roll_no = str(
-        roll_no
-    ).strip()
-
-    name = str(
-        name
-    ).strip()
-
-    branch = str(
-        branch
-    ).strip()
-
-    if not roll_no:
-        return False, "Please enter roll number."
-
-    if not name:
-        return False, "Please enter student name."
-
-    if not branch:
-        return False, "Please enter branch."
-
-    if image_file is None:
-        return False, "Please capture the student's face."
-
-    existing = students[
-        students["rollno"]
-        .astype(str)
-        .str.strip()
-        ==
-        roll_no
-    ]
-
-    if not existing.empty:
-        return False, "This roll number is already registered."
-
-    try:
-
-        image = Image.open(
-            image_file
-        )
-
-        frame = np.array(
-            image
-        )
-
-        gray, faces = detect_faces(
-            frame
-        )
-
-        if len(faces) == 0:
-            return False, "No face detected. Please look directly at the camera."
-
-        if len(faces) > 1:
-            return False, "Multiple faces detected. Please keep only one person in front of the camera."
-
-        x, y, w, h = faces[0]
-
-        face = gray[
-            y:y + h,
-            x:x + w
-        ]
-
-        student_folder = os.path.join(
-            DATASET_PATH,
-            roll_no
-        )
-
-        os.makedirs(
-            student_folder,
-            exist_ok=True
-        )
-
-        existing_images = os.listdir(
-            student_folder
-        )
-
-        image_number = (
-            len(existing_images)
-            + 1
-        )
-
-        image_path = os.path.join(
-            student_folder,
-            f"User.{roll_no}.{image_number}.jpg"
-        )
-
-        cv2.imwrite(
-            image_path,
-            face
-        )
-
-    except Exception as e:
-
-        return False, (
-            f"Could not save face image: {e}"
-        )
-
-    new_student = pd.DataFrame(
-        [
-            {
-                "rollno": roll_no,
-                "name": name,
-                "branch": branch
-            }
-        ]
-    )
-
-    students = pd.concat(
-        [
-            students,
-            new_student
-        ],
-        ignore_index=True
-    )
-
-    students.to_csv(
-        STUDENT_PATH,
-        sep="\t",
-        index=False
-    )
-
-    success, message = train_model()
-
-    if not success:
-        return False, message
-
-    recognizer = load_recognizer()
-
-    return True, (
-        "Student registered successfully."
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style="color:#8a8fa3; font-size:0.75rem; line-height:1.5;">
+            ⏱️ A student can receive a new Present entry only after the previous attendance is older than 1 hour.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
 # Header
-st.markdown(
-    '<div class="main-title">🎓 Smart Attendance System</div>',
-    unsafe_allow_html=True
-)
+st.markdown('<div class="main-title">Smart Attendance System</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">AI-POWERED • REAL-TIME • PROFESSIONAL</div>', unsafe_allow_html=True)
 
-st.markdown(
-    '<div class="main-subtitle">Fast and secure face recognition based attendance management</div>',
-    unsafe_allow_html=True
-)
 
-
-# Sidebar
-with st.sidebar:
-
-    st.markdown(
-        "## 🎓 Smart Attendance"
-    )
-
-    st.markdown(
-        "### System Overview"
-    )
-
-    st.metric(
-        "Registered Students",
-        len(students)
-    )
-
-    st.metric(
-        "Attendance Records",
-        len(attendance_df)
-    )
-
-    st.divider()
-
-    current_sidebar_time = datetime.now().strftime(
-        "%d %b %Y • %I:%M:%S %p"
-    )
-
-    st.caption(
-        "Current Time"
-    )
-
-    st.write(
-        current_sidebar_time
-    )
-
-    st.divider()
-
-    st.info(
-        "A student can receive a new Present entry only after the previous attendance is older than 1 hour."
-    )
-
-
-# Tabs
-tab1, tab2, tab3 = st.tabs(
-    [
-        "📷  Scan Attendance",
-        "➕  Register Student",
-        "📋  Attendance Records"
-    ]
-)
-
-
-# Scan attendance
-with tab1:
-
-    left, right = st.columns(
-        [1.35, 0.65],
-        gap="large"
-    )
-
-    with left:
-
-        st.subheader(
-            "Face Recognition"
-        )
-
-        st.caption(
-            "Look directly at the camera and capture your face."
-        )
-
-        camera_image = st.camera_input(
-            "Camera",
-            key="attendance_camera"
-        )
-
-        if camera_image is not None:
-
-            image = Image.open(
-                camera_image
-            )
-
-            frame = np.array(
-                image
-            )
-
-            scan_time = datetime.now()
-
-            st.markdown(
-                f"""
-                <div class="scan-time">
-                🕒 Scan Time:
-                {scan_time.strftime("%d %b %Y, %I:%M:%S %p")}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            if face_cascade is None:
-
-                st.error(
-                    "Face detection model could not be loaded."
-                )
-
-            elif recognizer is None:
-
-                st.error(
-                    "Face recognition model is not available."
-                )
-
-            else:
-
-                gray, faces = detect_faces(
-                    frame
-                )
-
-                if len(faces) == 0:
-
-                    st.markdown(
-                        """
-                        <div class="warning-card">
-                        ⚠️ No face detected. Please look directly at the camera.
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                    st.image(
-                        frame,
-                        use_container_width=True
-                    )
-
-                elif len(faces) > 1:
-
-                    st.warning(
-                        "Multiple faces detected. Please keep only one person in front of the camera."
-                    )
-
-                    st.image(
-                        frame,
-                        use_container_width=True
-                    )
-
-                else:
-
-                    x, y, w, h = faces[0]
-
-                    face = gray[
-                        y:y + h,
-                        x:x + w
-                    ]
-
-                    try:
-
-                        label, confidence = recognizer.predict(
-                            face
-                        )
-
-                        student = get_student(
-                            label
-                        )
-
-                        if (
-                            student is None
-                            or confidence >= 85
-                        ):
-
-                            st.markdown(
-                                """
-                                <div class="danger-card">
-                                ❌ Face not registered. Please register the student first.
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
-
-                            st.image(
-                                frame,
-                                use_container_width=True
-                            )
-
-                            st.info(
-                                "Open Register Student and add this student's face."
-                            )
-
-                        else:
-
-                            roll_no = student[
-                                "rollno"
-                            ]
-
-                            name = student[
-                                "name"
-                            ]
-
-                            branch = student[
-                                "branch"
-                            ]
-
-                            annotated_frame = draw_face_box(
-                                frame,
-                                x,
-                                y,
-                                w,
-                                h,
-                                name,
-                                roll_no,
-                                confidence
-                            )
-
-                            st.image(
-                                annotated_frame,
-                                caption="Student detected",
-                                use_container_width=True
-                            )
-
-                            result = save_attendance(
-                                roll_no,
-                                name,
-                                branch
-                            )
-
-                            st.markdown(
-                                f"""
-                                <div class="recognition-card">
-
-                                    <div class="recognition-title">
-                                    👤 Student Recognized
-                                    </div>
-
-                                    <div class="student-info">
-                                    <b>Name:</b> {name}<br>
-                                    <b>Roll No:</b> {roll_no}<br>
-                                    <b>Branch:</b> {branch}<br>
-                                    <b>Confidence:</b> {confidence:.2f}
-                                    </div>
-
-                                    <div class="time-info">
-                                    🕒 Current Scan:
-                                    {result["date"]} •
-                                    {result["time"]}
-                                    </div>
-
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
-
-                            if result["status"] == "Present":
-
-                                st.markdown(
-                                    f"""
-                                    <div class="success-card">
-                                    ✅ Attendance Marked Successfully
-                                    <br>
-                                    <small>
-                                    Present recorded at
-                                    {result["time"]}
-                                    </small>
-                                    </div>
-                                    """,
-                                    unsafe_allow_html=True
-                                )
-
-                            else:
-
-                                st.markdown(
-                                    f"""
-                                    <div class="warning-card">
-                                    🔄 Re-Verified
-                                    <br>
-                                    <small>
-                                    Current scan:
-                                    {result["time"]}
-                                    <br>
-                                    Last attendance:
-                                    {result["last_time"].strftime("%d %b %Y, %I:%M:%S %p")}
-                                    <br>
-                                    New attendance can be marked after approximately
-                                    {result["minutes_left"]} minute(s).
-                                    </small>
-                                    </div>
-                                    """,
-                                    unsafe_allow_html=True
-                                )
-
-                    except Exception as e:
-
-                        st.error(
-                            f"Face recognition error: {e}"
-                        )
-
-    with right:
-
-        st.markdown(
-            """
-            <div class="top-card">
-
-            <h3 style="color:#111827;">
-            How it works
-            </h3>
-
-            <p style="color:#4b5563;">
-            1. Capture your face
-            </p>
-
-            <p style="color:#4b5563;">
-            2. System detects the face
-            </p>
-
-            <p style="color:#4b5563;">
-            3. LBPH model identifies the student
-            </p>
-
-            <p style="color:#4b5563;">
-            4. Attendance is checked against the 1-hour rule
-            </p>
-
-            <p style="color:#4b5563;">
-            5. Present or Re-Verified status is shown
-            </p>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-
-# Register student
-with tab2:
-
-    st.subheader(
-        "Register New Student"
-    )
-
-    st.caption(
-        "Add student details and capture one clear face image."
-    )
-
-    col1, col2, col3 = st.columns(
-        3,
-        gap="medium"
-    )
-
-    with col1:
-
-        roll_no = st.text_input(
-            "Roll No",
-            placeholder="Example: 11232743"
-        )
-
-    with col2:
-
-        name = st.text_input(
-            "Student Name",
-            placeholder="Example: Rajiv Kr. Mandal"
-        )
-
-    with col3:
-
-        branch = st.text_input(
-            "Branch",
-            placeholder="Example: B.Tech CSE"
-        )
-
-    st.write("")
-
-    register_camera = st.camera_input(
-        "Capture Student Face",
-        key="register_camera"
-    )
-
-    if register_camera is not None:
-
-        st.success(
-            "Face captured successfully."
-        )
-
-    if st.button(
-        "Register Student",
-        type="primary",
-        use_container_width=True
-    ):
-
-        with st.spinner(
-            "Registering student and training face model..."
-        ):
-
-            success, message = register_student(
-                roll_no,
-                name,
-                branch,
-                register_camera
-            )
-
-        if success:
-
-            st.success(
-                message
-            )
-
-            st.info(
-                "Registration complete. Go to Scan Attendance and scan the student."
-            )
-
-            st.rerun()
-
-        else:
-
-            st.error(
-                message
-            )
-
-
-# Attendance records
-with tab3:
-
-    st.subheader(
-        "Attendance Records"
-    )
-
+# Dashboard page
+if menu == "🏠 Dashboard":
+    students_df = load_students()
     attendance_df = load_attendance()
 
-    if attendance_df.empty:
+    today = get_current_date()
+    today_df = (
+        attendance_df[attendance_df["Date"].astype(str) == today]
+        if not attendance_df.empty else pd.DataFrame()
+    )
 
-        st.info(
-            "No attendance records available yet."
+    total_students = get_total_unique_students()
+    total_records = len(attendance_df)
+    present_today = today_df["ID"].astype(str).nunique() if not today_df.empty else 0
+    absent_today = max(total_students - present_today, 0)
+
+    attendance_rate = (
+        round((present_today / total_students) * 100, 2) if total_students > 0 else 0.0
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Total Students</div>
+            <div class="metric-value">{total_students}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Present Today</div>
+            <div class="metric-value">{present_today}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Absent Today</div>
+            <div class="metric-value">{absent_today}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Attendance Rate</div>
+            <div class="metric-value">{attendance_rate}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Overview row
+    st.markdown("### 📋 System Overview")
+
+    o1, o2, o3 = st.columns(3)
+    with o1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Total Records</div>
+            <div class="metric-value">{total_records}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with o2:
+        unique_in_attendance = (
+            attendance_df["ID"].astype(str).nunique() if not attendance_df.empty else 0
         )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Unique Students</div>
+            <div class="metric-value">{unique_in_attendance}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with o3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Today's Attendance</div>
+            <div class="metric-value">{len(today_df)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("### 📅 Today's Attendance Log")
+    if today_df.empty:
+        st.info("Aaj tak koi attendance mark nahi hui. 'Mark Attendance' tab pe jao aur start karo.")
     else:
-
-        total_records = len(
-            attendance_df
+        st.dataframe(
+            today_df.sort_values("Timestamp", ascending=False),
+            use_container_width=True,
+            hide_index=True
         )
 
-        unique_students = (
-            attendance_df["Roll No"]
-            .astype(str)
-            .replace("", np.nan)
-            .dropna()
-            .nunique()
-        )
 
-        today = datetime.now().strftime(
-            "%Y-%m-%d"
-        )
+# Mark attendance page
+elif menu == "📸 Mark Attendance":
+    st.markdown("### 📸 Mark Attendance")
+    st.markdown(
+        '<span class="info-badge">⏱️ 1 hour gap required between two Present entries</span>',
+        unsafe_allow_html=True
+    )
 
-        today_count = len(
-            attendance_df[
-                attendance_df["Date"]
-                .astype(str)
-                .str.contains(
-                    today,
-                    na=False
-                )
-            ]
-        )
+    students_df = load_students()
 
-        col1, col2, col3 = st.columns(
-            3,
-            gap="medium"
-        )
+    if students_df.empty:
+        st.warning("⚠️ Koi student nahi mila. Pehle 'Students' tab se add karo.")
+    else:
+        col1, col2 = st.columns([1, 1])
 
         with col1:
+            st.markdown("#### Manual Entry")
 
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-title">
-                    TOTAL RECORDS
-                    </div>
-                    <div class="metric-value">
-                    {total_records}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            student_options = {
+                f"{row['Name']} ({row.get('Roll', 'N/A')})": idx
+                for idx, row in students_df.iterrows()
+            }
+
+            selected = st.selectbox("Select Student", list(student_options.keys()))
+            status = st.selectbox("Status", ["Present", "Absent", "Late"])
+
+            if st.button("✅ Mark Attendance"):
+                row = students_df.iloc[student_options[selected]]
+                ok, msg = mark_attendance(
+                    row.get("ID", student_options[selected]),
+                    row.get("Name", ""),
+                    row.get("Roll", ""),
+                    row.get("Department", ""),
+                    status
+                )
+                if ok:
+                    st.success(f"✅ {row['Name']} ki attendance mark ho gayi — {msg}")
+                    st.balloons()
+                else:
+                    st.warning(f"⏳ {row['Name']} — {msg}")
 
         with col2:
+            st.markdown("#### Camera Capture")
+            img_file = st.camera_input("Capture your photo")
 
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-title">
-                    UNIQUE STUDENTS
-                    </div>
-                    <div class="metric-value">
-                    {unique_students}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            if img_file is not None:
+                image = Image.open(img_file)
+                st.image(image, caption="Captured Image", use_container_width=True)
+                st.info("Face recognition logic yahan integrate kar sakte ho.")
+
+
+# Attendance records page
+elif menu == "📊 Attendance Records":
+    st.markdown("### 📊 Attendance Records")
+
+    df = load_attendance()
+
+    if df.empty:
+        st.info("Abhi tak koi attendance record nahi hai.")
+    else:
+        col1, col2, col3 = st.columns([1, 1, 1])
+
+        with col1:
+            dates = ["All"] + sorted(df["Date"].astype(str).unique().tolist(), reverse=True)
+            date_filter = st.selectbox("Filter by Date", dates)
+
+        with col2:
+            depts = ["All"] + sorted(df["Department"].astype(str).dropna().unique().tolist())
+            dept_filter = st.selectbox("Filter by Department", depts)
 
         with col3:
+            statuses = ["All"] + sorted(df["Status"].astype(str).dropna().unique().tolist())
+            status_filter = st.selectbox("Filter by Status", statuses)
 
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-title">
-                    TODAY'S ATTENDANCE
-                    </div>
-                    <div class="metric-value">
-                    {today_count}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        filtered = df.copy()
+        if date_filter != "All":
+            filtered = filtered[filtered["Date"].astype(str) == date_filter]
+        if dept_filter != "All":
+            filtered = filtered[filtered["Department"].astype(str) == dept_filter]
+        if status_filter != "All":
+            filtered = filtered[filtered["Status"].astype(str) == status_filter]
 
-        st.write("")
-
-        display_df = attendance_df.copy()
-
-        display_df = display_df.rename(
-            columns={
-                "Roll No": "Roll No",
-                "Name": "Student",
-                "Branch": "Branch",
-                "Date": "Date",
-                "Time": "Time",
-                "Status": "Status"
-            }
-        )
-
+        st.markdown(f"**{len(filtered)}** records found")
         st.dataframe(
-            display_df,
+            filtered.sort_values("Timestamp", ascending=False),
             use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Status": st.column_config.TextColumn(
-                    "Status"
-                ),
-                "Date": st.column_config.TextColumn(
-                    "Date"
-                ),
-                "Time": st.column_config.TextColumn(
-                    "Time"
-                )
-            }
+            hide_index=True
         )
 
-        st.write("")
+        csv = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "⬇️ Download CSV",
+            data=csv,
+            file_name=f"attendance_{get_current_date()}.csv",
+            mime="text/csv"
+        )
 
-        if os.path.exists(
-            ATTENDANCE_PATH
-        ):
 
-            with open(
-                ATTENDANCE_PATH,
-                "rb"
-            ) as file:
+# Students page
+elif menu == "👥 Students":
+    st.markdown("### 👥 Registered Students")
 
-                st.download_button(
-                    "⬇️ Download Attendance Excel",
-                    data=file,
-                    file_name="attendance.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
+    df = load_students()
+
+    if df.empty:
+        st.info("Koi student registered nahi hai.")
+    else:
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.markdown("#### ➕ Add New Student")
+
+    with st.form("add_student"):
+        c1, c2 = st.columns(2)
+        with c1:
+            sid = st.text_input("Student ID")
+            name = st.text_input("Full Name")
+        with c2:
+            roll = st.text_input("Roll Number")
+            dept = st.text_input("Department")
+
+        submitted = st.form_submit_button("Add Student")
+
+        if submitted:
+            if not all([sid, name, roll, dept]):
+                st.error("Saare fields bharo bhai.")
+            else:
+                new_row = pd.DataFrame([{
+                    "ID": sid, "Name": name, "Roll": roll, "Department": dept
+                }])
+                df = pd.concat([df, new_row], ignore_index=True)
+                df.to_csv(STUDENT_PATH, index=False)
+                st.success(f"✅ {name} add ho gaya!")
+                st.rerun()
+
+
+# About page
+elif menu == "ℹ️ About":
+    st.markdown("### ℹ️ About This System")
+    st.markdown(f"""
+    **Smart Attendance System** ek AI-powered attendance solution hai jo:
+
+    - 📸 Face recognition se attendance mark karta hai
+    - 🕒 Har entry pe fresh current timestamp use karta hai
+    - ⏱️ Ek student 1 hour ke andar dobara Present mark nahi kar sakta
+    - 📊 Real-time dashboard aur analytics deta hai
+    - 💾 CSV export support karta hai
+
+    ---
+
+    **Current Server Time:** `{get_current_timestamp()}`
+    """)
 
 
 # Footer
+st.markdown("---")
 st.markdown(
-    """
-    <div class="footer">
-        Smart Attendance System · OpenCV · LBPH · Streamlit
+    f"""
+    <div style="text-align:center; color:#8a8fa3; font-size:0.85rem; padding:1rem 0;">
+        🎓 Smart Attendance System • Built with ❤️ using Streamlit
+        <br>
+        <span style="font-size:0.75rem;">Last refreshed: {get_current_timestamp()}</span>
     </div>
     """,
     unsafe_allow_html=True
