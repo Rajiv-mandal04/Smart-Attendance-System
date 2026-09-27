@@ -2,16 +2,12 @@ from flask import Flask, render_template, jsonify, request, redirect
 from flask_cors import CORS
 import cv2
 import os
-import pandas as pd
 import numpy as np
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 
-
 app = Flask(__name__)
-
-# ============================================================
-# CORS
-# ============================================================
 
 CORS(
     app,
@@ -22,189 +18,214 @@ CORS(
     }
 )
 
-
 # ============================================================
-# PATHS
+# CONFIG
 # ============================================================
 
-STUDENTS = "data/students.csv"
-ATTENDANCE = "attendance/attendance.xlsx"
-TRAINER = "trainer/trainer.yml"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 CASCADE = "haarcascade/haarcascade_frontalface_default.xml"
-DATASET = "dataset"
 
 CONF_THRESHOLD = 85
 
-
-# ============================================================
-# LOAD STUDENT DATA
-# ============================================================
-
-if os.path.exists(STUDENTS):
-
-    try:
-        students = pd.read_csv(
-            STUDENTS,
-            sep="\t"
-        )
-
-    except Exception as e:
-
-        print("Student data loading error:", e)
-
-        students = pd.DataFrame(
-            columns=[
-                "rollno",
-                "name",
-                "branch"
-            ]
-        )
-
-else:
-
-    students = pd.DataFrame(
-        columns=[
-            "rollno",
-            "name",
-            "branch"
-        ]
-    )
+# Windows: %TEMP%
+# Render/Linux: /tmp
+MODEL_PATH = os.path.join(
+    os.environ.get("TEMP", "/tmp"),
+    "trainer.yml"
+)
 
 
 # ============================================================
-# LOAD ATTENDANCE DATA
+# DATABASE
 # ============================================================
 
-if os.path.exists(ATTENDANCE):
+def get_db():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not configured")
 
-    try:
+    return psycopg2.connect(DATABASE_URL)
 
-        attendance_df = pd.read_excel(
-            ATTENDANCE
+
+def init_database():
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id SERIAL PRIMARY KEY,
+            rollno BIGINT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            branch TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+    """)
 
-    except Exception as e:
-
-        print(
-            "Attendance loading error:",
-            e
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS attendance (
+            id SERIAL PRIMARY KEY,
+            rollno BIGINT NOT NULL,
+            name TEXT NOT NULL,
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            status TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+    """)
 
-        attendance_df = pd.DataFrame(
-            columns=[
-                "RollNo",
-                "Name",
-                "Date",
-                "Time",
-                "Status"
-            ]
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS face_samples (
+            id SERIAL PRIMARY KEY,
+            rollno BIGINT NOT NULL,
+            image BYTEA NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+    """)
 
-else:
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS face_models (
+            id INTEGER PRIMARY KEY,
+            model BYTEA NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-    attendance_df = pd.DataFrame(
-        columns=[
-            "RollNo",
-            "Name",
-            "Date",
-            "Time",
-            "Status"
-        ]
-    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    print("Database initialized successfully.")
 
 
 # ============================================================
 # FACE DETECTOR
 # ============================================================
 
-face_cascade = cv2.CascadeClassifier(
-    CASCADE
-)
+face_cascade = cv2.CascadeClassifier(CASCADE)
 
 if face_cascade.empty():
-
-    print(
-        "WARNING: Haar Cascade could not be loaded."
-    )
+    print("WARNING: Haar Cascade could not be loaded.")
+else:
+    print("Haar Cascade loaded successfully.")
 
 
 # ============================================================
-# LBPH RECOGNIZER
+# LBPH
 # ============================================================
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-if os.path.exists(TRAINER):
+
+# ============================================================
+# LOAD MODEL FROM DATABASE
+# ============================================================
+
+def load_model_from_database():
+
+    global recognizer
 
     try:
 
-        recognizer.read(
-            TRAINER
-        )
+        conn = get_db()
+        cur = conn.cursor()
 
-        print(
-            "LBPH model loaded successfully."
-        )
+        cur.execute("""
+            SELECT model
+            FROM face_models
+            WHERE id = 1
+        """)
+
+        row = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if not row:
+            print("No trained model found in database.")
+            return False
+
+        model_bytes = bytes(row[0])
+
+        # Make sure temp directory exists
+        model_directory = os.path.dirname(MODEL_PATH)
+
+        if model_directory:
+            os.makedirs(model_directory, exist_ok=True)
+
+        with open(MODEL_PATH, "wb") as f:
+            f.write(model_bytes)
+
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        recognizer.read(MODEL_PATH)
+
+        print("LBPH model loaded from database.")
+
+        return True
 
     except Exception as e:
 
-        print(
-            "Could not load LBPH model:",
-            e
-        )
+        print("Model loading error:", e)
 
-else:
-
-    print(
-        "LBPH trainer file not found."
-    )
+        return False
 
 
 # ============================================================
-# ATTENDANCE CACHE
+# SAVE MODEL TO DATABASE
 # ============================================================
 
-attendance_cache = {}
+def save_model_to_database():
+
+    try:
+
+        if not os.path.exists(MODEL_PATH):
+            return False
+
+        with open(MODEL_PATH, "rb") as f:
+            model_bytes = f.read()
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO face_models
+            (id, model, updated_at)
+            VALUES (1, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (id)
+            DO UPDATE SET
+                model = EXCLUDED.model,
+                updated_at = CURRENT_TIMESTAMP
+        """, (psycopg2.Binary(model_bytes),))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        print("LBPH model saved to database.")
+
+        return True
+
+    except Exception as e:
+
+        print("Model database save error:", e)
+
+        return False
 
 
-def initialize_attendance_cache():
+# ============================================================
+# LOAD DATABASE
+# ============================================================
 
-    global attendance_cache
+try:
 
-    if attendance_df.empty:
-        return
+    init_database()
+    load_model_from_database()
 
-    for _, row in attendance_df.iterrows():
+except Exception as e:
 
-        try:
-
-            rollno = int(
-                row["RollNo"]
-            )
-
-            date_str = str(
-                row["Date"]
-            )
-
-            time_str = str(
-                row["Time"]
-            )
-
-            dt = datetime.strptime(
-                f"{date_str} {time_str}",
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            attendance_cache[rollno] = {
-                "last_time": dt,
-                "date": date_str
-            }
-
-        except Exception:
-            pass
-
-
-initialize_attendance_cache()
+    print("Database startup error:", e)
 
 
 # ============================================================
@@ -244,15 +265,35 @@ def register():
 
 
 # ============================================================
-# HEALTH CHECK
+# HEALTH
 # ============================================================
 
 @app.route("/health")
 def health():
 
+    database_status = "unknown"
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("SELECT 1")
+        cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        database_status = "connected"
+
+    except Exception:
+
+        database_status = "error"
+
     return jsonify({
         "status": "ok",
-        "message": "Smart Attendance API is running"
+        "message": "Smart Attendance API is running",
+        "database": database_status
     })
 
 
@@ -273,11 +314,18 @@ def recognize():
             "msg": "No image received"
         }), 400
 
-    file = request.files["image"]
-
     try:
 
+        file = request.files["image"]
+
         image_bytes = file.read()
+
+        if not image_bytes:
+
+            return jsonify({
+                "status": "fail",
+                "msg": "Empty image received"
+            }), 400
 
         np_arr = np.frombuffer(
             image_bytes,
@@ -301,20 +349,31 @@ def recognize():
             cv2.COLOR_BGR2GRAY
         )
 
+        gray = cv2.equalizeHist(gray)
+
         faces = face_cascade.detectMultiScale(
             gray,
-            scaleFactor=1.2,
-            minNeighbors=5
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(80, 80)
+        )
+
+        print(
+            f"Recognition frame: "
+            f"{frame.shape[1]}x{frame.shape[0]}, "
+            f"faces={len(faces)}"
         )
 
         if len(faces) == 0:
 
             return jsonify({
                 "status": "fail",
-                "msg": "No face detected"
+                "msg": "No face detected",
+                "faces_found": 0,
+                "image_width": int(frame.shape[1]),
+                "image_height": int(frame.shape[0])
             })
 
-        # Largest detected face
         x, y, w, h = max(
             faces,
             key=lambda face: face[2] * face[3]
@@ -325,31 +384,6 @@ def recognize():
             x:x + w
         ]
 
-        # Check whether model is available
-        if not os.path.exists(TRAINER):
-
-            return jsonify({
-                "status": "fail",
-                "msg": "Face recognition model not available",
-                "face": {
-                    "x": int(x),
-                    "y": int(y),
-                    "w": int(w),
-                    "h": int(h)
-                },
-                "image_width": int(frame.shape[1]),
-                "image_height": int(frame.shape[0])
-            })
-
-        rollno, confidence = recognizer.predict(
-            face
-        )
-
-        print(
-            f"Prediction: Roll={rollno}, "
-            f"Confidence={confidence:.2f}"
-        )
-
         face_data = {
             "x": int(x),
             "y": int(y),
@@ -358,17 +392,45 @@ def recognize():
         }
 
         image_data = {
-            "image_width": int(
-                frame.shape[1]
-            ),
-            "image_height": int(
-                frame.shape[0]
-            )
+            "image_width": int(frame.shape[1]),
+            "image_height": int(frame.shape[0])
         }
 
-        # ====================================================
-        # UNKNOWN FACE
-        # ====================================================
+        # Check model
+        if not os.path.exists(MODEL_PATH):
+
+            return jsonify({
+                "status": "fail",
+                "msg": "Face recognition model not available",
+                "face": face_data,
+                **image_data
+            })
+
+        try:
+
+            rollno, confidence = recognizer.predict(
+                face
+            )
+
+        except Exception as e:
+
+            print(
+                "Prediction error:",
+                e
+            )
+
+            return jsonify({
+                "status": "fail",
+                "msg": "Face recognition model error",
+                "face": face_data,
+                **image_data
+            })
+
+        print(
+            f"Prediction: "
+            f"Roll={rollno}, "
+            f"Confidence={confidence:.2f}"
+        )
 
         if confidence >= CONF_THRESHOLD:
 
@@ -383,15 +445,25 @@ def recognize():
                 **image_data
             })
 
-        # ====================================================
-        # FIND STUDENT
-        # ====================================================
+        # Find student
+        conn = get_db()
 
-        student = students[
-            students["rollno"] == rollno
-        ]
+        cur = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
 
-        if student.empty:
+        cur.execute("""
+            SELECT rollno, name, branch
+            FROM students
+            WHERE rollno = %s
+        """, (int(rollno),))
+
+        student = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if not student:
 
             return jsonify({
                 "status": "unknown",
@@ -404,18 +476,11 @@ def recognize():
                 **image_data
             })
 
-        name = str(
-            student["name"].values[0]
-        )
-
-        # ====================================================
-        # RECOGNIZED
-        # ====================================================
-
         return jsonify({
             "status": "recognized",
-            "rollno": int(rollno),
-            "name": name,
+            "rollno": int(student["rollno"]),
+            "name": student["name"],
+            "branch": student["branch"],
             "confidence": round(
                 float(confidence),
                 2
@@ -446,9 +511,6 @@ def recognize():
     methods=["POST"]
 )
 def mark_attendance():
-
-    global attendance_df
-    global attendance_cache
 
     data = request.get_json(
         silent=True
@@ -481,105 +543,93 @@ def mark_attendance():
             "msg": "Invalid roll number"
         }), 400
 
-    student = students[
-        students["rollno"] == rollno
-    ]
+    conn = get_db()
 
-    if student.empty:
+    cur = conn.cursor(
+        cursor_factory=RealDictCursor
+    )
+
+    cur.execute("""
+        SELECT rollno, name, branch
+        FROM students
+        WHERE rollno = %s
+    """, (rollno,))
+
+    student = cur.fetchone()
+
+    if not student:
+
+        cur.close()
+        conn.close()
 
         return jsonify({
             "status": "fail",
             "msg": "Student not found"
         }), 404
 
-    name = str(
-        student["name"].values[0]
-    )
+    name = student["name"]
 
     now = datetime.now()
 
-    current_date = now.strftime(
-        "%Y-%m-%d"
-    )
-
-    current_time = now.strftime(
-        "%H:%M:%S"
-    )
+    current_date = now.date()
+    current_time = now.time()
 
     # ========================================================
-    # 1 HOUR RE-VERIFICATION CHECK
+    # LAST ATTENDANCE
     # ========================================================
 
-    if rollno in attendance_cache:
+    cur.execute("""
+        SELECT date, time
+        FROM attendance
+        WHERE rollno = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (rollno,))
 
-        last_record = attendance_cache[
-            rollno
-        ]
+    last_record = cur.fetchone()
 
-        last_date = last_record[
-            "date"
-        ]
+    if last_record:
 
-        last_time = last_record[
-            "last_time"
-        ]
+        last_datetime = datetime.combine(
+            last_record["date"],
+            last_record["time"]
+        )
 
-        if last_date == current_date:
+        if (
+            now - last_datetime
+        ) < timedelta(hours=1):
 
-            time_difference = (
-                now - last_time
-            )
+            cur.close()
+            conn.close()
 
-            if time_difference < timedelta(
-                hours=1
-            ):
-
-                return jsonify({
-                    "status": "reverified",
-                    "rollno": rollno,
-                    "name": name,
-                    "time": current_time,
-                    "msg": "Already verified within 1 hour"
-                })
+            return jsonify({
+                "status": "reverified",
+                "rollno": rollno,
+                "name": name,
+                "time": now.strftime("%H:%M:%S"),
+                "msg": "Already verified within 1 hour"
+            })
 
     # ========================================================
-    # NEW ATTENDANCE
+    # INSERT ATTENDANCE
     # ========================================================
 
-    new_entry = {
-        "RollNo": rollno,
-        "Name": name,
-        "Date": current_date,
-        "Time": current_time,
-        "Status": "Present"
-    }
+    cur.execute("""
+        INSERT INTO attendance
+        (rollno, name, date, time, status)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        rollno,
+        name,
+        current_date,
+        current_time,
+        "Present"
+    ))
 
-    attendance_df = pd.concat(
-        [
-            attendance_df,
-            pd.DataFrame(
-                [new_entry]
-            )
-        ],
-        ignore_index=True
-    )
+    conn.commit()
 
-    os.makedirs(
-        os.path.dirname(
-            ATTENDANCE
-        ),
-        exist_ok=True
-    )
-
-    attendance_df.to_excel(
-        ATTENDANCE,
-        index=False
-    )
-
-    attendance_cache[rollno] = {
-        "last_time": now,
-        "date": current_date
-    }
+    cur.close()
+    conn.close()
 
     print(
         f"Attendance marked: "
@@ -590,7 +640,7 @@ def mark_attendance():
         "status": "success",
         "rollno": rollno,
         "name": name,
-        "time": current_time,
+        "time": now.strftime("%H:%M:%S"),
         "msg": "Attendance marked successfully"
     })
 
@@ -626,7 +676,7 @@ def capture_face():
 
     try:
 
-        int(rollno)
+        rollno = int(rollno)
 
     except ValueError:
 
@@ -635,9 +685,9 @@ def capture_face():
             "msg": "Invalid Roll No"
         }), 400
 
-    file = request.files["image"]
-
     try:
+
+        file = request.files["image"]
 
         image_bytes = file.read()
 
@@ -663,10 +713,13 @@ def capture_face():
             cv2.COLOR_BGR2GRAY
         )
 
+        gray = cv2.equalizeHist(gray)
+
         faces = face_cascade.detectMultiScale(
             gray,
-            scaleFactor=1.3,
-            minNeighbors=5
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(80, 80)
         )
 
         if len(faces) == 0:
@@ -686,29 +739,26 @@ def capture_face():
             x:x + w
         ]
 
-        student_path = os.path.join(
-            DATASET,
-            str(rollno)
-        )
+        # ====================================================
+        # CHECK CURRENT COUNT
+        # ====================================================
 
-        os.makedirs(
-            student_path,
-            exist_ok=True
-        )
+        conn = get_db()
 
-        existing_images = [
-            f
-            for f in os.listdir(
-                student_path
-            )
-            if f.lower().endswith(".jpg")
-        ]
+        cur = conn.cursor()
 
-        image_number = len(
-            existing_images
-        )
+        cur.execute("""
+            SELECT COUNT(*)
+            FROM face_samples
+            WHERE rollno = %s
+        """, (rollno,))
 
-        if image_number >= 100:
+        count = cur.fetchone()[0]
+
+        if count >= 100:
+
+            cur.close()
+            conn.close()
 
             return jsonify({
                 "status": "complete",
@@ -717,29 +767,60 @@ def capture_face():
                 "msg": "100 face images already captured"
             })
 
-        face_path = os.path.join(
-            student_path,
-            f"{image_number}.jpg"
-        )
+        # ====================================================
+        # ENCODE FACE
+        # ====================================================
 
-        cv2.imwrite(
-            face_path,
+        success, encoded = cv2.imencode(
+            ".jpg",
             face_img
         )
+
+        if not success:
+
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "status": "fail",
+                "msg": "Face encoding failed"
+            }), 500
+
+        image_bytes = encoded.tobytes()
+
+        # ====================================================
+        # SAVE FACE TO DATABASE
+        # ====================================================
+
+        cur.execute("""
+            INSERT INTO face_samples
+            (rollno, image)
+            VALUES (%s, %s)
+        """, (
+            rollno,
+            psycopg2.Binary(image_bytes)
+        ))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        new_count = count + 1
 
         print(
             f"Captured face: "
             f"{rollno} "
-            f"{image_number + 1}/100"
+            f"{new_count}/100"
         )
 
         return jsonify({
             "status": "success",
-            "count": image_number + 1,
+            "count": new_count,
             "total": 100,
             "msg": (
                 f"Face captured "
-                f"{image_number + 1}/100"
+                f"{new_count}/100"
             )
         })
 
@@ -766,8 +847,6 @@ def capture_face():
 )
 def save_student():
 
-    global students
-
     rollno = request.form.get(
         "rollno",
         ""
@@ -789,67 +868,76 @@ def save_student():
 
     try:
 
-        rollno_int = int(
-            rollno
-        )
+        rollno = int(rollno)
 
     except ValueError:
 
         return "Roll No must be a number", 400
 
-    # ========================================================
-    # DUPLICATE ROLL NUMBER
-    # ========================================================
+    conn = get_db()
 
-    if not students.empty:
-
-        duplicate = students[
-            students["rollno"] == rollno_int
-        ]
-
-        if not duplicate.empty:
-
-            return (
-                "Student with this "
-                "Roll No already exists",
-                409
-            )
+    cur = conn.cursor()
 
     # ========================================================
-    # MAKE DATA FOLDER
+    # DUPLICATE STUDENT
     # ========================================================
 
-    os.makedirs(
-        os.path.dirname(
-            STUDENTS
-        ),
-        exist_ok=True
-    )
+    cur.execute("""
+        SELECT id
+        FROM students
+        WHERE rollno = %s
+    """, (rollno,))
+
+    if cur.fetchone():
+
+        cur.close()
+        conn.close()
+
+        return (
+            "Student with this Roll No already exists",
+            409
+        )
+
+    # ========================================================
+    # CHECK FACE SAMPLES
+    # ========================================================
+
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM face_samples
+        WHERE rollno = %s
+    """, (rollno,))
+
+    sample_count = cur.fetchone()[0]
+
+    if sample_count == 0:
+
+        cur.close()
+        conn.close()
+
+        return (
+            "Please capture face images first",
+            400
+        )
 
     # ========================================================
     # SAVE STUDENT
     # ========================================================
 
-    with open(
-        STUDENTS,
-        "a",
-        encoding="utf-8"
-    ) as f:
+    cur.execute("""
+        INSERT INTO students
+        (rollno, name, branch)
+        VALUES (%s, %s, %s)
+    """, (
+        rollno,
+        name,
+        branch
+    ))
 
-        f.write(
-            f"{rollno}\t"
-            f"{name}\t"
-            f"{branch}\n"
-        )
+    conn.commit()
 
-    # ========================================================
-    # RELOAD STUDENTS
-    # ========================================================
-
-    students = pd.read_csv(
-        STUDENTS,
-        sep="\t"
-    )
+    cur.close()
+    conn.close()
 
     print(
         f"Student saved: "
@@ -867,7 +955,39 @@ def save_student():
         result
     )
 
+    if result != "Model trained successfully":
+
+        return (
+            f"Student saved but training failed: {result}",
+            500
+        )
+
     return redirect("/")
+
+
+# ============================================================
+# TEMPORARY RETRAIN ENDPOINT
+# ============================================================
+
+@app.route(
+    "/retrain",
+    methods=["POST"]
+)
+def retrain():
+
+    result = train_model()
+
+    if result == "Model trained successfully":
+
+        return jsonify({
+            "status": "success",
+            "message": result
+        })
+
+    return jsonify({
+        "status": "fail",
+        "message": result
+    }), 500
 
 
 # ============================================================
@@ -876,86 +996,95 @@ def save_student():
 
 def train_model():
 
+    global recognizer
+
     faces = []
     ids = []
 
-    if not os.path.exists(
-        DATASET
-    ):
+    try:
 
-        return "Dataset folder not found"
+        conn = get_db()
 
-    for foldername in os.listdir(
-        DATASET
-    ):
+        cur = conn.cursor()
 
-        if not foldername.isdigit():
-            continue
+        cur.execute("""
+            SELECT rollno, image
+            FROM face_samples
+            ORDER BY rollno, id
+        """)
 
-        folder_path = os.path.join(
-            DATASET,
-            foldername
-        )
+        rows = cur.fetchall()
 
-        if not os.path.isdir(
-            folder_path
-        ):
-            continue
+        cur.close()
+        conn.close()
 
-        for filename in os.listdir(
-            folder_path
-        ):
+        for rollno, image_bytes in rows:
 
-            if not filename.lower().endswith(
-                ".jpg"
-            ):
-                continue
-
-            img_path = os.path.join(
-                folder_path,
-                filename
+            np_arr = np.frombuffer(
+                bytes(image_bytes),
+                np.uint8
             )
 
-            img = cv2.imread(
-                img_path,
+            img = cv2.imdecode(
+                np_arr,
                 cv2.IMREAD_GRAYSCALE
             )
 
             if img is not None:
 
-                faces.append(
-                    img
-                )
+                faces.append(img)
+                ids.append(int(rollno))
 
-                ids.append(
-                    int(foldername)
-                )
+        if not faces:
 
-    if not faces:
+            return "No training faces found"
 
-        return "No training faces found"
+        print(
+            f"Training with "
+            f"{len(faces)} face images."
+        )
 
-    try:
+        new_recognizer = (
+            cv2.face.LBPHFaceRecognizer_create()
+        )
 
-        recognizer.train(
+        new_recognizer.train(
             faces,
             np.array(ids)
         )
 
-        os.makedirs(
-            os.path.dirname(
-                TRAINER
-            ),
-            exist_ok=True
+        # ====================================================
+        # MAKE SURE MODEL DIRECTORY EXISTS
+        # ====================================================
+
+        model_directory = os.path.dirname(MODEL_PATH)
+
+        if model_directory:
+            os.makedirs(
+                model_directory,
+                exist_ok=True
+            )
+
+        # ====================================================
+        # SAVE TEMPORARY MODEL
+        # ====================================================
+
+        new_recognizer.write(
+            MODEL_PATH
         )
 
-        recognizer.write(
-            TRAINER
-        )
+        # ====================================================
+        # SAVE MODEL PERMANENTLY IN POSTGRESQL
+        # ====================================================
+
+        if not save_model_to_database():
+
+            return "Model database save failed"
+
+        recognizer = new_recognizer
 
         print(
-            f"Model trained with "
-            f"{len(faces)} images."
+            "Model trained and permanently saved."
         )
 
         return "Model trained successfully"

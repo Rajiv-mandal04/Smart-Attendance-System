@@ -1,8 +1,20 @@
-﻿attendance/attendance.xlsx
+﻿# Local face dataset
 dataset/
-data/students.csv
-app_backup.py
-templates/*_backup.html
+
+# Backup files
+*_backup.py
+*_backup.html
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Local environment
 .env
+venv/
+.venv/
+
+# Local database / attendance files
+*.db
+*.sqlite3
+*.xlsx
