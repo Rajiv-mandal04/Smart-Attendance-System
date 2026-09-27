@@ -1,49 +1,1639 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Register Student</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-body { background:#f0f2f5; }
-.container { margin-top:50px; max-width:500px; background:white; padding:30px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-h2{text-align:center;margin-bottom:20px;}
-.btn-space{margin-right:10px;}
-</style>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Register Student | Smart Attendance</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Inter, Arial, sans-serif;
+        }
+
+        body {
+            background:
+                radial-gradient(
+                    circle at top right,
+                    #1d2939 0%,
+                    #0b1220 35%,
+                    #050a12 75%
+                );
+
+            color: #ffffff;
+        }
+
+
+        /* ================================================= */
+        /* MAIN */
+        /* ================================================= */
+
+        .page {
+            width: 100%;
+            height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 25px;
+        }
+
+
+        .registration-card {
+
+            width: min(1200px, 100%);
+
+            height: min(720px, calc(100vh - 50px));
+
+            display: grid;
+
+            grid-template-columns: 390px 1fr;
+
+            background: rgba(15, 23, 42, 0.88);
+
+            border: 1px solid rgba(255,255,255,0.08);
+
+            border-radius: 24px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 25px 70px rgba(0,0,0,0.45),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+
+            backdrop-filter: blur(18px);
+        }
+
+
+        /* ================================================= */
+        /* LEFT PANEL */
+        /* ================================================= */
+
+        .left-panel {
+
+            padding: 38px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: space-between;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    rgba(30,41,59,0.55),
+                    rgba(15,23,42,0.3)
+                );
+
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+
+        .brand {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin-bottom: 35px;
+        }
+
+
+        .brand-icon {
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background: linear-gradient(
+                135deg,
+                #2563eb,
+                #06b6d4
+            );
+
+            font-size: 21px;
+
+            box-shadow:
+                0 8px 25px rgba(37,99,235,0.3);
+        }
+
+
+        .brand-text {
+
+            font-size: 16px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.3px;
+        }
+
+
+        .brand-subtitle {
+
+            font-size: 11px;
+
+            color: #94a3b8;
+
+            margin-top: 2px;
+        }
+
+
+        h1 {
+
+            font-size: 28px;
+
+            line-height: 1.2;
+
+            margin-bottom: 9px;
+        }
+
+
+        .description {
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            margin-bottom: 28px;
+        }
+
+
+        /* ================================================= */
+        /* FORM */
+        /* ================================================= */
+
+        .form-group {
+
+            margin-bottom: 17px;
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            font-size: 12px;
+
+            color: #cbd5e1;
+
+            margin-bottom: 7px;
+
+            font-weight: 600;
+        }
+
+
+        .input {
+
+            width: 100%;
+
+            height: 45px;
+
+            padding: 0 14px;
+
+            border-radius: 10px;
+
+            border: 1px solid #263449;
+
+            background: #0b1220;
+
+            color: #ffffff;
+
+            outline: none;
+
+            font-size: 13px;
+
+            transition: 0.2s;
+        }
+
+
+        .input::placeholder {
+
+            color: #64748b;
+        }
+
+
+        .input:focus {
+
+            border-color: #3b82f6;
+
+            box-shadow:
+                0 0 0 3px rgba(59,130,246,0.12);
+        }
+
+
+        /* ================================================= */
+        /* STATUS */
+        /* ================================================= */
+
+        .status {
+
+            min-height: 22px;
+
+            margin-top: 5px;
+
+            color: #94a3b8;
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        /* ================================================= */
+        /* PROGRESS */
+        /* ================================================= */
+
+        .progress-section {
+
+            margin-top: 18px;
+        }
+
+
+        .progress-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 8px;
+
+            font-size: 12px;
+        }
+
+
+        .progress-title {
+
+            color: #cbd5e1;
+        }
+
+
+        .progress-count {
+
+            color: #60a5fa;
+
+            font-weight: 700;
+        }
+
+
+        .progress {
+
+            width: 100%;
+
+            height: 7px;
+
+            border-radius: 10px;
+
+            overflow: hidden;
+
+            background: #1e293b;
+        }
+
+
+        .progress-bar {
+
+            width: 0%;
+
+            height: 100%;
+
+            border-radius: 10px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #2563eb,
+                    #06b6d4
+                );
+
+            transition: width 0.25s ease;
+        }
+
+
+        /* ================================================= */
+        /* BUTTONS */
+        /* ================================================= */
+
+        .buttons {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 20px;
+        }
+
+
+        button {
+
+            height: 44px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        #captureBtn {
+
+            flex: 1;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #1d4ed8
+                );
+
+            box-shadow:
+                0 8px 22px rgba(37,99,235,0.22);
+        }
+
+
+        #captureBtn:hover:not(:disabled) {
+
+            transform: translateY(-1px);
+
+            box-shadow:
+                0 12px 28px rgba(37,99,235,0.3);
+        }
+
+
+        #saveBtn {
+
+            flex: 1;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #10b981,
+                    #059669
+                );
+
+            box-shadow:
+                0 8px 22px rgba(16,185,129,0.2);
+        }
+
+
+        button:disabled {
+
+            opacity: 0.4;
+
+            cursor: not-allowed;
+
+            box-shadow: none !important;
+        }
+
+
+        /* ================================================= */
+        /* RIGHT CAMERA PANEL */
+        /* ================================================= */
+
+        .camera-panel {
+
+            padding: 28px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            min-width: 0;
+        }
+
+
+        .camera-header {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            margin-bottom: 15px;
+        }
+
+
+        .camera-title {
+
+            font-size: 15px;
+
+            font-weight: 700;
+        }
+
+
+        .camera-status {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            font-size: 11px;
+
+            color: #94a3b8;
+        }
+
+
+        .status-dot {
+
+            width: 8px;
+
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: #22c55e;
+
+            box-shadow:
+                0 0 10px rgba(34,197,94,0.8);
+        }
+
+
+        /* ================================================= */
+        /* CAMERA */
+        /* ================================================= */
+
+        .camera-container {
+
+            position: relative;
+
+            width: 100%;
+
+            aspect-ratio: 16 / 10;
+
+            background: #020617;
+
+            border-radius: 18px;
+
+            overflow: hidden;
+
+            border: 1px solid rgba(255,255,255,0.08);
+
+            box-shadow:
+                0 15px 40px rgba(0,0,0,0.35);
+        }
+
+
+        #camera {
+
+            width: 100%;
+
+            height: 100%;
+
+            object-fit: cover;
+
+            display: block;
+        }
+
+
+        #overlay {
+
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            pointer-events: none;
+        }
+
+
+        /* ================================================= */
+        /* FACE GUIDE */
+        /* ================================================= */
+
+        .face-guide {
+
+            position: absolute;
+
+            left: 50%;
+
+            top: 50%;
+
+            transform: translate(-50%, -50%);
+
+            width: 190px;
+
+            height: 250px;
+
+            border: 2px solid rgba(255,255,255,0.55);
+
+            border-radius: 48%;
+
+            pointer-events: none;
+
+            box-shadow:
+                0 0 0 9999px rgba(0,0,0,0.18);
+        }
+
+
+        .camera-hint {
+
+            position: absolute;
+
+            left: 50%;
+
+            bottom: 16px;
+
+            transform: translateX(-50%);
+
+            padding: 8px 14px;
+
+            border-radius: 20px;
+
+            background: rgba(0,0,0,0.55);
+
+            backdrop-filter: blur(8px);
+
+            color: #e2e8f0;
+
+            font-size: 11px;
+
+            white-space: nowrap;
+        }
+
+
+        /* ================================================= */
+        /* CAMERA FOOTER */
+        /* ================================================= */
+
+        .camera-footer {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-top: 13px;
+
+            color: #64748b;
+
+            font-size: 11px;
+        }
+
+
+        .camera-footer span {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 6px;
+        }
+
+
+        /* ================================================= */
+        /* RESPONSIVE */
+        /* ================================================= */
+
+        @media (max-width: 900px) {
+
+            html,
+            body {
+
+                overflow: auto;
+
+            }
+
+
+            .page {
+
+                height: auto;
+
+                min-height: 100vh;
+
+                padding: 15px;
+
+            }
+
+
+            .registration-card {
+
+                height: auto;
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .left-panel {
+
+                border-right: none;
+
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+
+            }
+
+
+            .camera-panel {
+
+                padding: 22px;
+
+            }
+
+        }
+
+
+        @media (max-width: 500px) {
+
+            .left-panel {
+
+                padding: 25px;
+
+            }
+
+
+            .camera-panel {
+
+                padding: 15px;
+
+            }
+
+
+            h1 {
+
+                font-size: 24px;
+
+            }
+
+
+            .buttons {
+
+                flex-direction: column;
+
+            }
+
+
+            .face-guide {
+
+                width: 150px;
+
+                height: 210px;
+
+            }
+
+        }
+
+    </style>
+
 </head>
+
+
 <body>
-<div class="container">
-<h2>Student Registration</h2>
-<form method="POST" action="/save-student">
-<div class="mb-3">
-<label for="rollno">Roll No</label>
-<input type="text" class="form-control" id="rollno" name="rollno" required>
+
+
+<div class="page">
+
+
+    <div class="registration-card">
+
+
+        <!-- ================================================= -->
+        <!-- LEFT -->
+        <!-- ================================================= -->
+
+        <div class="left-panel">
+
+
+            <div>
+
+
+                <div class="brand">
+
+                    <div class="brand-icon">
+                        ◉
+                    </div>
+
+                    <div>
+
+                        <div class="brand-text">
+                            Smart Attendance
+                        </div>
+
+                        <div class="brand-subtitle">
+                            Face Recognition System
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <h1>
+                    Register Student
+                </h1>
+
+
+                <p class="description">
+                    Add a new student to the attendance
+                    system. Capture 100 face samples
+                    for accurate recognition.
+                </p>
+
+
+                <!-- FORM -->
+
+                <div class="form-group">
+
+                    <label>
+                        Roll Number
+                    </label>
+
+                    <input
+                        id="rollno"
+                        class="input"
+                        type="text"
+                        placeholder="Enter roll number"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Student Name
+                    </label>
+
+                    <input
+                        id="name"
+                        class="input"
+                        type="text"
+                        placeholder="Enter student name"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Branch
+                    </label>
+
+                    <input
+                        id="branch"
+                        class="input"
+                        type="text"
+                        placeholder="e.g. B.Tech CSE"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div
+                    id="status"
+                    class="status">
+
+                    Initializing camera...
+
+                </div>
+
+
+                <!-- PROGRESS -->
+
+                <div class="progress-section">
+
+                    <div class="progress-header">
+
+                        <span class="progress-title">
+                            Face Capture Progress
+                        </span>
+
+                        <span
+                            id="progressCount"
+                            class="progress-count">
+
+                            0 / 100
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="progress">
+
+                        <div
+                            id="progressBar"
+                            class="progress-bar">
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BUTTONS -->
+
+                <div class="buttons">
+
+                    <button
+                        id="captureBtn"
+                        onclick="startCapture()"
+                        disabled>
+
+                        Capture Face
+
+                    </button>
+
+
+                    <button
+                        id="saveBtn"
+                        onclick="saveStudent()"
+                        disabled>
+
+                        Save Student
+
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="camera-footer">
+
+                <span>
+                    🔒 Face data processed locally
+                </span>
+
+                <span>
+                    100 samples required
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- RIGHT CAMERA -->
+        <!-- ================================================= -->
+
+        <div class="camera-panel">
+
+
+            <div class="camera-header">
+
+                <div class="camera-title">
+                    Face Capture
+                </div>
+
+
+                <div class="camera-status">
+
+                    <span class="status-dot"></span>
+
+                    Camera Active
+
+                </div>
+
+            </div>
+
+
+            <div class="camera-container">
+
+
+                <video
+                    id="camera"
+                    autoplay
+                    playsinline
+                    muted>
+                </video>
+
+
+                <canvas id="overlay"></canvas>
+
+
+                <div class="face-guide"></div>
+
+
+                <div class="camera-hint">
+                    Position your face inside the frame
+                </div>
+
+
+            </div>
+
+
+            <div class="camera-footer">
+
+                <span>
+                    ● Keep your face clearly visible
+                </span>
+
+                <span>
+                    Lighting: Good
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
 </div>
-<div class="mb-3">
-<label for="name">Name</label>
-<input type="text" class="form-control" id="name" name="name" required>
-</div>
-<div class="mb-3">
-<label for="branch">Branch</label>
-<input type="text" class="form-control" id="branch" name="branch" required>
-</div>
-<div class="mb-3">
-<button type="button" class="btn btn-primary btn-space" onclick="captureFace()">Capture Face</button>
-<span id="capture-status"></span>
-</div>
-<button type="submit" class="btn btn-success btn-space">Save</button>
-<button type="reset" class="btn btn-danger">Cancel</button>
-</form>
-</div>
+
+
+<!-- Hidden capture canvas -->
+
+<canvas
+    id="captureCanvas"
+    style="display:none;">
+</canvas>
+
+
 <script>
-function captureFace(){
-  var rollno = document.getElementById('rollno').value;
-  if(!rollno){ alert("Enter Roll No"); return; }
-  document.getElementById('capture-status').innerText = "Capturing face...";
-  fetch('/capture-face?rollno='+rollno)
-  .then(res => res.text())
-  .then(data => document.getElementById('capture-status').innerText = data);
+
+let stream = null;
+
+let capturing = false;
+
+let capturedCount = 0;
+
+const TOTAL_IMAGES = 100;
+
+
+const video =
+    document.getElementById("camera");
+
+const overlay =
+    document.getElementById("overlay");
+
+const captureCanvas =
+    document.getElementById("captureCanvas");
+
+const statusText =
+    document.getElementById("status");
+
+const progressBar =
+    document.getElementById("progressBar");
+
+const progressCount =
+    document.getElementById("progressCount");
+
+const captureBtn =
+    document.getElementById("captureBtn");
+
+const saveBtn =
+    document.getElementById("saveBtn");
+
+
+// ============================================================
+// START CAMERA
+// ============================================================
+
+async function startCamera() {
+
+    try {
+
+        stream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+
+                    facingMode: "user",
+
+                    width: {
+                        ideal: 1280
+                    },
+
+                    height: {
+                        ideal: 720
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        video.srcObject = stream;
+
+        await video.play();
+
+
+        statusText.innerText =
+            "Camera ready. Fill the details and start capturing.";
+
+
+        captureBtn.disabled = false;
+
+
+        resizeOverlay();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        statusText.innerText =
+            "Unable to access camera. Please allow camera permission.";
+
+        captureBtn.disabled = true;
+
+    }
+
 }
+
+
+// ============================================================
+// RESIZE OVERLAY
+// ============================================================
+
+function resizeOverlay() {
+
+    if (!video.videoWidth) {
+        return;
+    }
+
+    overlay.width =
+        video.videoWidth;
+
+    overlay.height =
+        video.videoHeight;
+
+}
+
+
+// ============================================================
+// CAPTURE FRAME
+// ============================================================
+
+function captureFrame() {
+
+    if (
+        !video.videoWidth ||
+        !video.videoHeight
+    ) {
+
+        return null;
+
+    }
+
+
+    captureCanvas.width =
+        video.videoWidth;
+
+    captureCanvas.height =
+        video.videoHeight;
+
+
+    const ctx =
+        captureCanvas.getContext("2d");
+
+
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        captureCanvas.width,
+        captureCanvas.height
+    );
+
+
+    return new Promise(
+        resolve => {
+
+            captureCanvas.toBlob(
+
+                blob => {
+
+                    resolve(blob);
+
+                },
+
+                "image/jpeg",
+
+                0.85
+
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// START CAPTURE
+// ============================================================
+
+async function startCapture() {
+
+    if (capturing) {
+        return;
+    }
+
+
+    const rollno =
+        document
+            .getElementById("rollno")
+            .value
+            .trim();
+
+
+    const name =
+        document
+            .getElementById("name")
+            .value
+            .trim();
+
+
+    const branch =
+        document
+            .getElementById("branch")
+            .value
+            .trim();
+
+
+    if (!rollno || !name || !branch) {
+
+        statusText.innerText =
+            "Please fill Roll Number, Name and Branch.";
+
+        return;
+
+    }
+
+
+    if (!/^\d+$/.test(rollno)) {
+
+        statusText.innerText =
+            "Roll Number must contain numbers only.";
+
+        return;
+
+    }
+
+
+    capturing = true;
+
+    capturedCount = 0;
+
+
+    captureBtn.disabled = true;
+
+    saveBtn.disabled = true;
+
+
+    statusText.innerText =
+        "Capturing face samples...";
+
+
+    for (
+        let i = 0;
+        i < TOTAL_IMAGES;
+        i++
+    ) {
+
+
+        if (!capturing) {
+            break;
+        }
+
+
+        const blob =
+            await captureFrame();
+
+
+        if (!blob) {
+
+            i--;
+
+            await delay(200);
+
+            continue;
+
+        }
+
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "rollno",
+            rollno
+        );
+
+
+        formData.append(
+            "image",
+            blob,
+            `face_${i}.jpg`
+        );
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/capture-face",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                data.status === "success"
+            ) {
+
+
+                capturedCount =
+                    data.count;
+
+
+                updateProgress(
+                    capturedCount
+                );
+
+
+                statusText.innerText =
+                    `Capturing face samples... ${capturedCount}/100`;
+
+
+            }
+
+
+            else if (
+                data.msg === "No face detected"
+            ) {
+
+
+                statusText.innerText =
+                    "Face not detected — keep your face inside the guide.";
+
+                i--;
+
+
+            }
+
+
+            else if (
+                data.status === "complete"
+            ) {
+
+
+                capturedCount = 100;
+
+                updateProgress(100);
+
+                break;
+
+            }
+
+
+            else {
+
+
+                statusText.innerText =
+                    data.msg ||
+                    "Unable to capture face.";
+
+                i--;
+
+            }
+
+
+        }
+
+        catch (error) {
+
+
+            console.error(error);
+
+
+            statusText.innerText =
+                "Server connection error.";
+
+            i--;
+
+        }
+
+
+        await delay(100);
+
+    }
+
+
+    capturing = false;
+
+
+    if (
+        capturedCount >= TOTAL_IMAGES
+    ) {
+
+
+        statusText.innerText =
+            "✓ Face capture completed. Student is ready to save.";
+
+
+        saveBtn.disabled = false;
+
+
+    }
+
+    else {
+
+
+        statusText.innerText =
+            `Capture stopped at ${capturedCount}/100.`;
+
+        captureBtn.disabled = false;
+
+    }
+
+}
+
+
+// ============================================================
+// UPDATE PROGRESS
+// ============================================================
+
+function updateProgress(count) {
+
+    const percentage =
+        Math.round(
+            (count / TOTAL_IMAGES) * 100
+        );
+
+
+    progressBar.style.width =
+        percentage + "%";
+
+
+    progressCount.innerText =
+        `${count} / ${TOTAL_IMAGES}`;
+
+}
+
+
+// ============================================================
+// SAVE STUDENT
+// ============================================================
+
+async function saveStudent() {
+
+
+    const rollno =
+        document
+            .getElementById("rollno")
+            .value
+            .trim();
+
+
+    const name =
+        document
+            .getElementById("name")
+            .value
+            .trim();
+
+
+    const branch =
+        document
+            .getElementById("branch")
+            .value
+            .trim();
+
+
+    if (
+        capturedCount < 100
+    ) {
+
+        statusText.innerText =
+            "Please capture all 100 face samples first.";
+
+        return;
+
+    }
+
+
+    saveBtn.disabled = true;
+
+
+    statusText.innerText =
+        "Saving student and training face recognition model...";
+
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "rollno",
+        rollno
+    );
+
+
+    formData.append(
+        "name",
+        name
+    );
+
+
+    formData.append(
+        "branch",
+        branch
+    );
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/save-student",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        if (response.redirected) {
+
+            statusText.innerText =
+                "✓ Student registered successfully.";
+
+            window.location.href =
+                response.url;
+
+            return;
+
+        }
+
+
+        const result =
+            await response.text();
+
+
+        if (response.ok) {
+
+            statusText.innerText =
+                "✓ Student registered successfully.";
+
+            setTimeout(
+                () => {
+
+                    window.location.href = "/";
+
+                },
+                1200
+            );
+
+        }
+
+        else {
+
+            statusText.innerText =
+                result ||
+                "Unable to save student.";
+
+            saveBtn.disabled = false;
+
+        }
+
+
+    }
+
+    catch (error) {
+
+
+        console.error(error);
+
+
+        statusText.innerText =
+            "Error while saving student.";
+
+        saveBtn.disabled = false;
+
+    }
+
+}
+
+
+// ============================================================
+// DELAY
+// ============================================================
+
+function delay(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+
+}
+
+
+// ============================================================
+// VIDEO READY
+// ============================================================
+
+video.addEventListener(
+    "loadedmetadata",
+    () => {
+
+        resizeOverlay();
+
+    }
+);
+
+
+// ============================================================
+// CLEAN CAMERA
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (stream) {
+
+            stream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// START
+// ============================================================
+
+startCamera();
+
 </script>
+
 </body>
 </html>

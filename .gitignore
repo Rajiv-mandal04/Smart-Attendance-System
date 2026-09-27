@@ -1,0 +1,8 @@
+﻿attendance/attendance.xlsx
+dataset/
+data/students.csv
+app_backup.py
+templates/*_backup.html
+__pycache__/
+*.pyc
+.env

@@ -1,6 +1,7 @@
-streamlit
-opencv-contrib-python-headless==4.10.0.84
-numpy<2
+Flask
+gunicorn
+opencv-contrib-python-headless
+numpy
 pandas
 openpyxl
-Pillow
+flask-cors

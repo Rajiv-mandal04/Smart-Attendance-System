@@ -1,50 +1,1044 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Smart Attendance System</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
 
-<style>
-body{
-  background:#f0f2f5;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-.card{
-  width:700px;
-  border-radius:15px;
-  box-shadow:0 0 20px rgba(0,0,0,0.15);
-}
-.choice-btn{
-  font-size:20px;
-  padding:25px;
-}
-</style>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Attendance System</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        html,
+        body {
+
+            width: 100%;
+            min-height: 100%;
+
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Arial,
+                sans-serif;
+
+        }
+
+
+        body {
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+
+            color: #f8fafc;
+
+            background:
+                radial-gradient(
+                    circle at 10% 10%,
+                    rgba(37,99,235,.20),
+                    transparent 30%
+                ),
+                radial-gradient(
+                    circle at 90% 90%,
+                    rgba(6,182,212,.14),
+                    transparent 28%
+                ),
+                #020617;
+
+        }
+
+
+        /* ================================================= */
+        /* BACKGROUND */
+        /* ================================================= */
+
+        .background-glow {
+
+            position: fixed;
+
+            width: 420px;
+            height: 420px;
+
+            border-radius: 50%;
+
+            background:
+                rgba(37,99,235,.09);
+
+            filter:
+                blur(80px);
+
+            top: -180px;
+            right: -120px;
+
+            pointer-events: none;
+
+            animation:
+                floatGlow 8s ease-in-out infinite;
+
+        }
+
+
+        .background-glow.two {
+
+            width: 360px;
+            height: 360px;
+
+            top: auto;
+            right: auto;
+
+            bottom: -180px;
+            left: -120px;
+
+            background:
+                rgba(6,182,212,.07);
+
+            animation-delay:
+                -4s;
+
+        }
+
+
+        @keyframes floatGlow {
+
+            0%,
+            100% {
+
+                transform:
+                    translate(0,0);
+
+            }
+
+            50% {
+
+                transform:
+                    translate(-25px,25px);
+
+            }
+
+        }
+
+
+        /* ================================================= */
+        /* PAGE */
+        /* ================================================= */
+
+        .page {
+
+            position: relative;
+
+            width: 100%;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 25px;
+
+        }
+
+
+        /* ================================================= */
+        /* MAIN CARD */
+        /* ================================================= */
+
+        .main-card {
+
+            position: relative;
+
+            width: min(940px, 100%);
+
+            padding: 52px;
+
+            border-radius: 28px;
+
+            background:
+                rgba(15,23,42,.82);
+
+            border:
+                1px solid
+                rgba(148,163,184,.12);
+
+            backdrop-filter:
+                blur(24px);
+
+            box-shadow:
+                0 40px 100px
+                rgba(0,0,0,.55),
+                inset 0 1px 0
+                rgba(255,255,255,.04);
+
+            animation:
+                cardEnter .7s
+                cubic-bezier(.2,.8,.2,1);
+
+        }
+
+
+        @keyframes cardEnter {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    translateY(22px)
+                    scale(.97);
+
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    translateY(0)
+                    scale(1);
+
+            }
+
+        }
+
+
+        /* ================================================= */
+        /* HEADER */
+        /* ================================================= */
+
+        .header {
+
+            text-align: center;
+
+            max-width: 650px;
+
+            margin:
+                0 auto 42px;
+
+        }
+
+
+        .logo {
+
+            width: 68px;
+            height: 68px;
+
+            margin:
+                0 auto 20px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 20px;
+
+            font-size: 28px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #06b6d4
+                );
+
+            box-shadow:
+                0 15px 40px
+                rgba(37,99,235,.30);
+
+            animation:
+                logoFloat 4s ease-in-out infinite;
+
+        }
+
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+
+                transform:
+                    translateY(0);
+
+            }
+
+            50% {
+
+                transform:
+                    translateY(-5px);
+
+            }
+
+        }
+
+
+        .eyebrow {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            margin-bottom: 13px;
+
+            color: #60a5fa;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            letter-spacing:
+                1.5px;
+
+            text-transform:
+                uppercase;
+
+        }
+
+
+        .eyebrow-dot {
+
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background:
+                #22c55e;
+
+            box-shadow:
+                0 0 10px
+                rgba(34,197,94,.8);
+
+            animation:
+                pulse 1.8s infinite;
+
+        }
+
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: .45;
+                transform: scale(.7);
+            }
+
+        }
+
+
+        .header h1 {
+
+            font-size:
+                clamp(30px, 5vw, 44px);
+
+            line-height:
+                1.1;
+
+            letter-spacing:
+                -1.3px;
+
+            margin-bottom:
+                14px;
+
+        }
+
+
+        .gradient-text {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #60a5fa,
+                    #22d3ee
+                );
+
+            -webkit-background-clip:
+                text;
+
+            -webkit-text-fill-color:
+                transparent;
+
+        }
+
+
+        .header p {
+
+            color:
+                #94a3b8;
+
+            font-size:
+                14px;
+
+            line-height:
+                1.7;
+
+        }
+
+
+        /* ================================================= */
+        /* OPTIONS */
+        /* ================================================= */
+
+        .options {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 18px;
+
+        }
+
+
+        /* ================================================= */
+        /* OPTION CARD */
+        /* ================================================= */
+
+        .option-card {
+
+            position: relative;
+
+            min-height:
+                220px;
+
+            padding:
+                28px;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            justify-content:
+                space-between;
+
+            text-decoration:
+                none;
+
+            color:
+                inherit;
+
+            border-radius:
+                20px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(30,41,59,.72),
+                    rgba(15,23,42,.65)
+                );
+
+            border:
+                1px solid
+                rgba(148,163,184,.10);
+
+            overflow:
+                hidden;
+
+            transition:
+                transform .3s ease,
+                border-color .3s ease,
+                box-shadow .3s ease;
+
+        }
+
+
+        .option-card::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 160px;
+            height: 160px;
+
+            border-radius: 50%;
+
+            top: -90px;
+            right: -70px;
+
+            background:
+                rgba(37,99,235,.12);
+
+            filter:
+                blur(30px);
+
+            transition:
+                transform .5s ease;
+
+        }
+
+
+        .option-card:hover {
+
+            transform:
+                translateY(-6px);
+
+            border-color:
+                rgba(96,165,250,.30);
+
+            box-shadow:
+                0 20px 45px
+                rgba(0,0,0,.30),
+                0 0 35px
+                rgba(37,99,235,.08);
+
+        }
+
+
+        .option-card:hover::before {
+
+            transform:
+                scale(1.5);
+
+        }
+
+
+        /* ================================================= */
+        /* ICON */
+        /* ================================================= */
+
+        .option-icon {
+
+            position: relative;
+
+            width: 58px;
+            height: 58px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            border-radius:
+                16px;
+
+            font-size:
+                24px;
+
+            background:
+                rgba(37,99,235,.12);
+
+            border:
+                1px solid
+                rgba(96,165,250,.16);
+
+            transition:
+                transform .3s ease;
+
+        }
+
+
+        .option-card:hover
+        .option-icon {
+
+            transform:
+                scale(1.08)
+                rotate(-3deg);
+
+        }
+
+
+        .register .option-icon {
+
+            background:
+                rgba(6,182,212,.10);
+
+            border-color:
+                rgba(34,211,238,.16);
+
+        }
+
+
+        /* ================================================= */
+        /* CONTENT */
+        /* ================================================= */
+
+        .option-content {
+
+            position: relative;
+
+            margin-top:
+                24px;
+
+        }
+
+
+        .option-content h2 {
+
+            font-size:
+                19px;
+
+            margin-bottom:
+                8px;
+
+            letter-spacing:
+                -.2px;
+
+        }
+
+
+        .option-content p {
+
+            color:
+                #64748b;
+
+            font-size:
+                12px;
+
+            line-height:
+                1.6;
+
+        }
+
+
+        /* ================================================= */
+        /* ARROW */
+        /* ================================================= */
+
+        .arrow {
+
+            position:
+                absolute;
+
+            right:
+                24px;
+
+            bottom:
+                24px;
+
+            width:
+                34px;
+
+            height:
+                34px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            border-radius:
+                10px;
+
+            color:
+                #94a3b8;
+
+            background:
+                rgba(255,255,255,.04);
+
+            transition:
+                transform .3s ease,
+                background .3s ease,
+                color .3s ease;
+
+        }
+
+
+        .option-card:hover
+        .arrow {
+
+            transform:
+                translateX(4px);
+
+            color:
+                #ffffff;
+
+            background:
+                rgba(37,99,235,.25);
+
+        }
+
+
+        /* ================================================= */
+        /* STATUS BAR */
+        /* ================================================= */
+
+        .system-status {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                8px;
+
+            margin-top:
+                27px;
+
+            color:
+                #475569;
+
+            font-size:
+                11px;
+
+        }
+
+
+        .status-indicator {
+
+            width:
+                6px;
+
+            height:
+                6px;
+
+            border-radius:
+                50%;
+
+            background:
+                #22c55e;
+
+            box-shadow:
+                0 0 9px
+                rgba(34,197,94,.8);
+
+        }
+
+
+        /* ================================================= */
+        /* FOOTER */
+        /* ================================================= */
+
+        .footer {
+
+            text-align:
+                center;
+
+            margin-top:
+                32px;
+
+            color:
+                #334155;
+
+            font-size:
+                10px;
+
+        }
+
+
+        /* ================================================= */
+        /* RESPONSIVE */
+        /* ================================================= */
+
+        @media (max-width: 700px) {
+
+            body {
+
+                overflow:
+                    auto;
+
+            }
+
+
+            .page {
+
+                padding:
+                    18px;
+
+            }
+
+
+            .main-card {
+
+                padding:
+                    32px 20px;
+
+                border-radius:
+                    22px;
+
+            }
+
+
+            .header {
+
+                margin-bottom:
+                    30px;
+
+            }
+
+
+            .options {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .option-card {
+
+                min-height:
+                    190px;
+
+            }
+
+        }
+
+
+        @media (max-width: 400px) {
+
+            .header h1 {
+
+                font-size:
+                    30px;
+
+            }
+
+
+            .header p {
+
+                font-size:
+                    13px;
+
+            }
+
+
+            .main-card {
+
+                padding:
+                    27px 16px;
+
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-<div class="card p-4 text-center">
-  <h2 class="mb-4">Smart Attendance System</h2>
 
-  <div class="row g-3">
-    <div class="col-md-6">
-      <a href="/attendance" class="btn btn-success w-100 choice-btn">
-        ✅ Mark Attendance
-      </a>
-    </div>
+<div class="background-glow"></div>
 
-    <div class="col-md-6">
-      <a href="/register" class="btn btn-primary w-100 choice-btn">
-        📝 Register Student
-      </a>
-    </div>
-  </div>
+<div class="background-glow two"></div>
+
+
+<div class="page">
+
+
+    <main class="main-card">
+
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <header class="header">
+
+
+            <div class="logo">
+                ◉
+            </div>
+
+
+            <div class="eyebrow">
+
+                <span
+                    class="eyebrow-dot">
+                </span>
+
+                SMART ATTENDANCE PLATFORM
+
+            </div>
+
+
+            <h1>
+
+                Smart Attendance
+                <span class="gradient-text">
+                    System
+                </span>
+
+            </h1>
+
+
+            <p>
+
+                AI-powered face recognition for
+                fast, secure and reliable attendance
+                verification.
+
+            </p>
+
+
+        </header>
+
+
+        <!-- ================================================= -->
+        <!-- OPTIONS -->
+        <!-- ================================================= -->
+
+        <section class="options">
+
+
+            <!-- ATTENDANCE -->
+
+            <a
+                href="/attendance"
+                class="option-card">
+
+
+                <div
+                    class="option-icon">
+
+                    ◉
+
+                </div>
+
+
+                <div
+                    class="option-content">
+
+                    <h2>
+                        Mark Attendance
+                    </h2>
+
+
+                    <p>
+
+                        Verify your identity using
+                        face recognition and securely
+                        record your attendance.
+
+                    </p>
+
+                </div>
+
+
+                <div
+                    class="arrow">
+
+                    →
+
+                </div>
+
+
+            </a>
+
+
+            <!-- REGISTER -->
+
+            <a
+                href="/register"
+                class="option-card register">
+
+
+                <div
+                    class="option-icon">
+
+                    ✦
+
+                </div>
+
+
+                <div
+                    class="option-content">
+
+                    <h2>
+                        Register Student
+                    </h2>
+
+
+                    <p>
+
+                        Create a new student profile
+                        and capture face data for
+                        future recognition.
+
+                    </p>
+
+                </div>
+
+
+                <div
+                    class="arrow">
+
+                    →
+
+                </div>
+
+
+            </a>
+
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- SYSTEM STATUS -->
+        <!-- ================================================= -->
+
+        <div class="system-status">
+
+            <span
+                class="status-indicator">
+            </span>
+
+            Face recognition system ready
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- FOOTER -->
+        <!-- ================================================= -->
+
+        <div class="footer">
+
+            Secure • Fast • AI-powered attendance
+
+        </div>
+
+
+    </main>
+
 </div>
 
+
 </body>
+
 </html>
