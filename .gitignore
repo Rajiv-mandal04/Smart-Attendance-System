@@ -1,20 +1,8 @@
-﻿# Local face dataset
-dataset/
-
-# Backup files
-*_backup.py
-*_backup.html
-
-# Python cache
-__pycache__/
-*.pyc
-
-# Local environment
-.env
-venv/
-.venv/
-
-# Local database / attendance files
-*.db
-*.sqlite3
-*.xlsx
+﻿Flask
+gunicorn
+opencv-contrib-python-headless
+numpy
+pandas
+openpyxl
+flask-cors
+psycopg2-binary
