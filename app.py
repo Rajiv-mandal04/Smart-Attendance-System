@@ -6,6 +6,7 @@ import numpy as np
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
@@ -18,9 +19,7 @@ CORS(
     }
 )
 
-# ============================================================
 # CONFIG
-# ============================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -35,16 +34,20 @@ MODEL_PATH = os.path.join(
     "trainer.yml"
 )
 
+IST = ZoneInfo("Asia/Kolkata")
 
-# ============================================================
+
 # DATABASE
-# ============================================================
 
 def get_db():
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured")
 
-    return psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("SET TIME ZONE 'Asia/Kolkata'")
+    cur.close()
+    return conn
 
 
 def init_database():
@@ -99,9 +102,7 @@ def init_database():
     print("Database initialized successfully.")
 
 
-# ============================================================
 # FACE DETECTOR
-# ============================================================
 
 face_cascade = cv2.CascadeClassifier(CASCADE)
 
@@ -111,16 +112,12 @@ else:
     print("Haar Cascade loaded successfully.")
 
 
-# ============================================================
 # LBPH
-# ============================================================
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 
 
-# ============================================================
 # LOAD MODEL FROM DATABASE
-# ============================================================
 
 def load_model_from_database():
 
@@ -171,9 +168,7 @@ def load_model_from_database():
         return False
 
 
-# ============================================================
 # SAVE MODEL TO DATABASE
-# ============================================================
 
 def save_model_to_database():
 
@@ -214,9 +209,7 @@ def save_model_to_database():
         return False
 
 
-# ============================================================
 # LOAD DATABASE
-# ============================================================
 
 try:
 
@@ -227,10 +220,7 @@ except Exception as e:
 
     print("Database startup error:", e)
 
-
-# ============================================================
 # HOME
-# ============================================================
 
 @app.route("/")
 def home():
@@ -240,9 +230,7 @@ def home():
     )
 
 
-# ============================================================
 # ATTENDANCE PAGE
-# ============================================================
 
 @app.route("/attendance")
 def attendance_page():
@@ -252,9 +240,7 @@ def attendance_page():
     )
 
 
-# ============================================================
 # REGISTER PAGE
-# ============================================================
 
 @app.route("/register")
 def register():
@@ -264,9 +250,7 @@ def register():
     )
 
 
-# ============================================================
 # HEALTH
-# ============================================================
 
 @app.route("/health")
 def health():
@@ -297,9 +281,7 @@ def health():
     })
 
 
-# ============================================================
 # RECOGNIZE FACE
-# ============================================================
 
 @app.route(
     "/recognize",
@@ -502,9 +484,7 @@ def recognize():
         }), 500
 
 
-# ============================================================
 # MARK ATTENDANCE
-# ============================================================
 
 @app.route(
     "/mark-attendance",
@@ -569,14 +549,13 @@ def mark_attendance():
 
     name = student["name"]
 
-    now = datetime.now()
+    now = datetime.now(IST)
 
     current_date = now.date()
     current_time = now.time()
 
-    # ========================================================
+
     # LAST ATTENDANCE
-    # ========================================================
 
     cur.execute("""
         SELECT date, time
@@ -592,7 +571,8 @@ def mark_attendance():
 
         last_datetime = datetime.combine(
             last_record["date"],
-            last_record["time"]
+            last_record["time"],
+            tzinfo=IST
         )
 
         if (
@@ -610,10 +590,9 @@ def mark_attendance():
                 "msg": "Already verified within 1 hour"
             })
 
-    # ========================================================
+    
     # INSERT ATTENDANCE
-    # ========================================================
-
+    
     cur.execute("""
         INSERT INTO attendance
         (rollno, name, date, time, status)
@@ -645,9 +624,7 @@ def mark_attendance():
     })
 
 
-# ============================================================
 # CAPTURE FACE
-# ============================================================
 
 @app.route(
     "/capture-face",
@@ -739,9 +716,7 @@ def capture_face():
             x:x + w
         ]
 
-        # ====================================================
         # CHECK CURRENT COUNT
-        # ====================================================
 
         conn = get_db()
 
@@ -767,9 +742,7 @@ def capture_face():
                 "msg": "100 face images already captured"
             })
 
-        # ====================================================
         # ENCODE FACE
-        # ====================================================
 
         success, encoded = cv2.imencode(
             ".jpg",
@@ -788,9 +761,7 @@ def capture_face():
 
         image_bytes = encoded.tobytes()
 
-        # ====================================================
         # SAVE FACE TO DATABASE
-        # ====================================================
 
         cur.execute("""
             INSERT INTO face_samples
@@ -837,9 +808,7 @@ def capture_face():
         }), 500
 
 
-# ============================================================
 # SAVE STUDENT
-# ============================================================
 
 @app.route(
     "/save-student",
@@ -878,9 +847,7 @@ def save_student():
 
     cur = conn.cursor()
 
-    # ========================================================
     # DUPLICATE STUDENT
-    # ========================================================
 
     cur.execute("""
         SELECT id
@@ -898,9 +865,7 @@ def save_student():
             409
         )
 
-    # ========================================================
     # CHECK FACE SAMPLES
-    # ========================================================
 
     cur.execute("""
         SELECT COUNT(*)
@@ -920,9 +885,7 @@ def save_student():
             400
         )
 
-    # ========================================================
     # SAVE STUDENT
-    # ========================================================
 
     cur.execute("""
         INSERT INTO students
@@ -944,10 +907,8 @@ def save_student():
         f"{rollno} - {name}"
     )
 
-    # ========================================================
     # TRAIN MODEL
-    # ========================================================
-
+    
     result = train_model()
 
     print(
@@ -965,9 +926,7 @@ def save_student():
     return redirect("/")
 
 
-# ============================================================
 # TEMPORARY RETRAIN ENDPOINT
-# ============================================================
 
 @app.route(
     "/retrain",
@@ -990,9 +949,7 @@ def retrain():
     }), 500
 
 
-# ============================================================
 # TRAIN MODEL
-# ============================================================
 
 def train_model():
 
@@ -1053,9 +1010,7 @@ def train_model():
             np.array(ids)
         )
 
-        # ====================================================
         # MAKE SURE MODEL DIRECTORY EXISTS
-        # ====================================================
 
         model_directory = os.path.dirname(MODEL_PATH)
 
@@ -1065,17 +1020,14 @@ def train_model():
                 exist_ok=True
             )
 
-        # ====================================================
+
         # SAVE TEMPORARY MODEL
-        # ====================================================
 
         new_recognizer.write(
             MODEL_PATH
         )
 
-        # ====================================================
         # SAVE MODEL PERMANENTLY IN POSTGRESQL
-        # ====================================================
 
         if not save_model_to_database():
 
@@ -1099,9 +1051,7 @@ def train_model():
         return "Training failed"
 
 
-# ============================================================
 # RUN
-# ============================================================
 
 if __name__ == "__main__":
 
